@@ -1,46 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
-	
-<%@ page import="java.sql.*, javax.sql.*, javax.naming.*"%>
-    
-<%
-  Connection conn=null;
-  try{
-	 // DBCP
-	 //Context ctx = new InitialContext();
-	 // student스키마에 접근.
-	 // DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/student");
-	 //conn = ds.getConnection();
-	 
-	 // JDBC
-	  String driverName = "com.mysql.cj.jdbc.Driver";
-	  Class.forName(driverName);
-	  String dbURL = "jdbc:mysql://localhost:3306/webDB"; // webDB스키마에 접근
-	  conn = DriverManager.getConnection(dbURL, "root", "root");
-  }catch(Exception e){ 
-	 e.printStackTrace();
-  }
-%>
-<%
-request.setCharacterEncoding("UTF-8");
-	
-	// student스키마 안에 있는 student_info 테이블에 접근.
-	String sql = "SELECT * FROM posts LIMIT 5";
-	PreparedStatement stmt = conn.prepareStatement(sql);
-	// 파라미터 바인딩
-
-	// List<"post객체"> post객체
-	// SQL 실행
-	ResultSet result = stmt.executeQuery();
-	while(result.next()) {
-		// post객체 리스트에 삽입.
-	}
-%>
-<%
- conn.close();
- result.close();
- stmt.close();
-%>
 <!DOCTYPE html>
 <html>
 <head>
