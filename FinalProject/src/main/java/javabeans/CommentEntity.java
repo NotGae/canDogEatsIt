@@ -5,8 +5,8 @@ import java.text.SimpleDateFormat;
 
 public class CommentEntity {
 	
-    private int commentId;
-	private int postId;
+    private String commentId;
+	private String parentId;
 	private String userName;
 //	private String userPw;
 	private String commentContent;
@@ -16,9 +16,9 @@ public class CommentEntity {
 	
 	public CommentEntity() {}
 	
-	public CommentEntity(int commentId, int postId, String userName, String commentContent, String createDate, int likeCnt, int disLikeCnt) {
+	public CommentEntity(String commentId, String parentId, String userName, String commentContent, String createDate, int likeCnt, int disLikeCnt) {
 	    this.commentId = commentId;
-	    this.postId = postId;
+	    this.parentId = parentId;
 	    this.userName = userName;
 //	    this.userPw = userPw;
 	    this.commentContent = commentContent;
@@ -27,17 +27,17 @@ public class CommentEntity {
 	    this.disLikeCnt = disLikeCnt;
 	}
 	
-	public int getCommentId() {
+	public String getCommentId() {
 		return commentId;
 	}
-	public void setCommentId(int commentId) {
+	public void setCommentId(String commentId) {
 		this.commentId = commentId;
 	}
-	public int getPostId() {
-		return postId;
+	public String getParentId() {
+		return parentId;
 	}
-	public void setPostId(int postId) {
-		this.postId = postId;
+	public void setPostId(String parentId) {
+		this.parentId = parentId;
 	}
 	public String getUserName() {
 		return userName;

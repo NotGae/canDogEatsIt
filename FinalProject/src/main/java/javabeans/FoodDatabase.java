@@ -57,10 +57,11 @@ public class FoodDatabase {
 
 			// SQL 실행
 			result = stmt.executeQuery();
-			int foodId = -1, likeCnt = -1, disLikeCnt = -1;
+			String foodId = "";
+			int likeCnt = -1, disLikeCnt = -1;
 			String foodName = "";
 			if (result.next()) {
-				foodId = result.getInt(1);
+				foodId = result.getString(1);
 				foodName = result.getString(2);
 				likeCnt = result.getInt(3);
 				disLikeCnt = result.getInt(4);
@@ -77,7 +78,7 @@ public class FoodDatabase {
 		return null;
 	}
 	
-	public boolean setVote(int parentId, String voteType) {
+	public boolean setVote(String parentId, String voteType) {
 		connect();
 		String sql = null;
 		if(voteType.equals("like")) {
@@ -90,7 +91,7 @@ public class FoodDatabase {
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setInt(1, parentId);
+			stmt.setString(1, parentId);
 
 			// SQL 실행
 			int rowsAffected = stmt.executeUpdate();
@@ -108,7 +109,7 @@ public class FoodDatabase {
 		return false;
 	}
 	
-	public int getVote(int foodId, String voteType) {
+	public int getVote(String foodId, String voteType) {
 		connect();
 		String sql = null;
 		if(voteType.equals("like")) {
@@ -121,7 +122,7 @@ public class FoodDatabase {
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setInt(1, foodId);
+			stmt.setString(1, foodId);
 
 			// SQL 실행
 			result = stmt.executeQuery();
@@ -136,5 +137,36 @@ public class FoodDatabase {
 			e.printStackTrace();
 		}
 		return -1;
+	}
+	
+	public boolean existsRows(String id) {
+		connect();
+		boolean isExists = false;
+		String sql = "SELECT * FROM foods WHERE food_id = ?";
+		try {
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setString(1, id);
+
+			// SQL 실행
+			result = stmt.executeQuery();
+			if (result.next()) {
+				isExists = true;
+			} else {
+				isExists = false; 
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		disconnect();
+		try {
+			result.close();
+			stmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return isExists;
 	}
 }

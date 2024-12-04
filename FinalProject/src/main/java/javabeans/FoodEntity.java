@@ -1,25 +1,25 @@
 package javabeans;
 
 public class FoodEntity {
-	private int foodId;
+	private String foodId;
 	private String foodName;
 	private int likeCnt;
 	private int disLikeCnt;
 	
 	public FoodEntity() {}
 	
-	public FoodEntity(int foodId, String foodName, int likeCnt, int disLikeCnt) {
+	public FoodEntity(String foodId, String foodName, int likeCnt, int disLikeCnt) {
 		this.foodId = foodId;
 		this.foodName = foodName;
 		this.likeCnt = likeCnt;
 		this.disLikeCnt = disLikeCnt;
 	}
 
-	public int getFoodId() {
+	public String getFoodId() {
 		return foodId;
 	}
 
-	public void setFoodId(int foodId) {
+	public void setFoodId(String foodId) {
 		this.foodId = foodId;
 	}	
 

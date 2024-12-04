@@ -86,13 +86,17 @@ label {
 						const userName = document.querySelector(".user_name").value;
 						const userPw = document.querySelector(".user_pw").value;
 						const comment = document.querySelector(".comment").value;
-						const postId = document
+						const parentId = document
 								.querySelector(".food_container").dataset.id;
+						
+						document.querySelector(".user_name").value = "";
+						document.querySelector(".user_pw").value = "";
+						document.querySelector(".comment").value = "";
 						
 						if(userName == '' || userPw == '' || comment == '') {
 							return;
 						}
-						saveComment(postId, userName, userPw, comment);
+						saveComment(parentId, userName, userPw, comment);
 					}); // 한 번만 실행되도록 설정
 
 	document.querySelectorAll(".vote_btn").forEach((btn) => {
@@ -101,7 +105,6 @@ label {
 			const parentId = targetBtn.parentNode.dataset.id;
 			const parentType = targetBtn.parentNode.classList;
 			let voteType = null;
-			let entityType = null;
 	        if (targetBtn.classList.contains("like")) {
 	        	voteType = "like";
 	            // parentId에 해당하는 객체의 like 증가 처리
@@ -109,17 +112,19 @@ label {
 	        	voteType = "dislike";
 	            // parentId에 해당하는 객체의 dislike 증가 처리
 	        }
-			//parentId에 해당하는 객체의 like나 dislike증가.
-			if(parentType.contains("food_container")) {
-				entityType = "food_container";
-			} else if(parentType.contains("comment")) {
-				entityType = "comment"
-			}
-			
-	        increamentVoteCnt(voteType, entityType, parentId);
+	        increamentVoteCnt(voteType, parentId);
 		})
 	});
-
+	document.querySelectorAll(".comment_page_btn").forEach((item) => {
+		item.addEventListener("click", (e) => {
+			const target = e.currentTarget;
+			if (target.classList.contains("back_comment_page_btn")) {
+				// 여기서도 뭐 ajax하면 될듯.
+	        } else if (target.classList.contains("front_comment_page_btn")) {
+	        }
+		});
+	});
+	
 	let request = null;
 	//댓글등록 버튼 누르면. post로 ajax요청보냄.
 	function createRequest() {
@@ -131,26 +136,26 @@ label {
 		if (request == null)
 			alert('Error creating request object!');
 	}
-	function saveComment(postId, userName, userPw, comment) {
+	function saveComment(parentId, userName, userPw, comment) {
 		createRequest();
 		// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
 		let url = "sumbitComment.jsp?";
 		let qry = "userName=" + encodeURIComponent(userName) + "&userPw="
 				+ encodeURIComponent(userPw) + "&comment="
-				+ encodeURIComponent(comment) + "&postId="
-				+ encodeURIComponent(postId);
+				+ encodeURIComponent(comment) + "&parentId="
+				+ encodeURIComponent(parentId);
 		request.open("POST", url, true);
 		request.onreadystatechange = updateComment;
 		request.setRequestHeader("Content-type",
 				"application/x-www-form-urlencoded");
 		request.send(qry)
 	}
-	function increamentVoteCnt(voteType, entityType, parentId) {
+	function increamentVoteCnt(voteType, parentId) {
 		createRequest();
-		if(voteType === null || entityType === null) return;
+		if(voteType === null) return;
 		
 		let url = "increaVoteCnt.jsp?";
-		let qry = "voteType=" + encodeURIComponent(voteType) + "&entityType=" + encodeURIComponent(entityType) + "&parentId=" + encodeURIComponent(parentId);
+		let qry = "voteType=" + encodeURIComponent(voteType) + "&parentId=" + encodeURIComponent(parentId);
 		request.open("POST", url, true);
 		request.onreadystatechange = updateVote;
 		request.setRequestHeader("Content-type",
@@ -162,7 +167,7 @@ label {
 		if (request.readyState == 4 && request.status == 200) {
 			const response = JSON.parse(request.responseText);
 			if (response.status === "success") {
-				const commentId = response.commentId;
+				const parentId = response.parentId;
 				const userName = response.userName; // 서버에서 보낸 사용자 이름
 				const comment = response.comment; // 서버에서 보낸 댓글 내용
 				const currentTime = response.currentTime; // 서버에서 보낸 댓글 내용
@@ -170,9 +175,9 @@ label {
 				let commentContainer = document
 						.querySelector(".comment_container");
 
-				let htmlString = '<li class="comment" data_id="'  + commentId + '">'
+				let htmlString = '<li class="comment" data_id="'  + parentId + '">'
 						+ userName
-						+ ":"
+						+ ": "
 						+ comment
 						+ " "
 						+ currentTime
@@ -192,9 +197,8 @@ label {
 				const parentId = response.parentId;
 				const voteType = response.voteType; 
 				const updatedVoteCnt = response.updatedVoteCnt;
-				const entityType = response.entityType;
 				
-				const option = "." + entityType + "[data-id=" + '"' + parentId + '"' + "]"
+				const option = "[data-id=" + '"' + parentId + '"' + "]"
 				let entity = document.querySelector(option);
 
 				if (voteType === 'like') {
