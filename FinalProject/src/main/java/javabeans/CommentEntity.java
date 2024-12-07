@@ -20,7 +20,6 @@ public class CommentEntity {
 	    this.commentId = commentId;
 	    this.parentId = parentId;
 	    this.userName = userName;
-//	    this.userPw = userPw;
 	    this.commentContent = commentContent;
 	    this.createDate = createDate;
 	    this.likeCnt = likeCnt;

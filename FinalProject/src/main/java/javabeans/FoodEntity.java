@@ -5,14 +5,24 @@ public class FoodEntity {
 	private String foodName;
 	private int likeCnt;
 	private int disLikeCnt;
+	private int views;
 	
 	public FoodEntity() {}
 	
-	public FoodEntity(String foodId, String foodName, int likeCnt, int disLikeCnt) {
+	public FoodEntity(String foodId, String foodName, int likeCnt, int disLikeCnt, int views) {
 		this.foodId = foodId;
 		this.foodName = foodName;
 		this.likeCnt = likeCnt;
 		this.disLikeCnt = disLikeCnt;
+		this.views = views;
+	}
+
+	public int getViews() {
+		return views;
+	}
+
+	public void setViews(int views) {
+		this.views = views;
 	}
 
 	public String getFoodId() {

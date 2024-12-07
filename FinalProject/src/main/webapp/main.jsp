@@ -12,7 +12,6 @@
 
 	<form class="search_form" method="GET" action="searchResult.jsp">
 		<input type="text" name="searchValue" class="search_value" />
-		<input type="text" name="commentPage" value=0 style="display: none;"/>
 		<button tyep="submit" class="saerch_button">검색</button>
 	</form>
 </body>

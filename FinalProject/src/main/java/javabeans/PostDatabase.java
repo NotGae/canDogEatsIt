@@ -2,10 +2,12 @@ package javabeans;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.UUID;
+
 import javax.sql.*;
 import javax.naming.*;
 
-public class FoodDatabase {
+public class PostDatabase {
 
 	// DBCP
 	private Context ctx = null;
@@ -15,7 +17,7 @@ public class FoodDatabase {
 	private PreparedStatement stmt = null;
 	private ResultSet result = null;
 
-	public FoodDatabase() {
+	public PostDatabase() {
 
 		try {
 			ctx = new InitialContext();
@@ -45,32 +47,105 @@ public class FoodDatabase {
 		}
 	}
 
-	public FoodEntity getFood(String FoodName) {
+	public ArrayList<PostEntity> getPostArray(int offset) {
+		connect();
+		ArrayList<PostEntity> list = new ArrayList<>();
+
+		try {
+			// student스키마 안에 있는 student_info 테이블에 접근.
+			String sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts ORDER BY create_date DESC LIMIT ?, 10";
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setInt(1, offset);
+			// SQL 실행
+			result = stmt.executeQuery();
+			// List<comment>
+			// String postId, String userName, String postName, String postContent, String createDate,  int likeCnt, int disLikeCnt, int views
+			while (result.next()) {
+				PostEntity post = new PostEntity(result.getString(1), result.getString(2), result.getString(3),
+						result.getString(4), result.getString(5), result.getInt(6), result.getInt(7), result.getInt(8));
+				list.add(post);
+			}
+			disconnect();
+			stmt.close();
+			result.close();
+
+			return list;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			disconnect();
+
+			return null;
+		}
+	}
+
+	public String addPost(String userName, String userPw, String postName, String postContent, String currnetTime) {
+		connect();
+		boolean success = false;
+
+		try {
+			UUID uuid = UUID.randomUUID();
+			String sql = "INSERT INTO posts(post_id, user_name, user_pw, post_name, post_content, create_date) VALUES (?, ?, ?, ?, ?, ?)";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, uuid.toString());
+			stmt.setString(2, userName);
+			stmt.setString(3, userPw);
+			stmt.setString(4, postName);
+			stmt.setString(5, postContent);
+			stmt.setString(6, currnetTime);
+			int rowsAffected = stmt.executeUpdate();
+			String postId = null;
+			if (rowsAffected > 0) {
+				// 성공 응답
+				success = true;
+				// 생성된 Primary Key 가져오기
+				postId = uuid.toString();
+				disconnect();
+				stmt.close();
+				return postId;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			disconnect();
+			stmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public PostEntity getPost(String PostId) {
 		connect();
 
 		// student스키마 안에 있는 student_info 테이블에 접근.
-		String sql = "SELECT * FROM foods WHERE food_name = ?";
+		String sql = "SELECT post_id, user_name, post_name, post_content, create_date, views, like_cnt, dislike_cnt FROM posts WHERE post_id = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setString(1, FoodName);
+			stmt.setString(1, PostId);
 
 			// SQL 실행
 			result = stmt.executeQuery();
-			String foodId = "";
-			int likeCnt = -1, disLikeCnt = -1, views = -1;
+			String postId = "", userName = "", postName = "", postContent = "", createDate = "";
+			int views = -1, likeCnt = -1, disLikeCnt = -1;
 			String foodName = "";
 			if (result.next()) {
-				foodId = result.getString(1);
-				foodName = result.getString(2);
-				likeCnt = result.getInt(3);
-				disLikeCnt = result.getInt(4);
-				views = result.getInt(5);
-
+				postId = result.getString(1);
+				userName = result.getString(2);
+				postName = result.getString(3);
+				postContent = result.getString(4);
+				createDate = result.getString(5);
+				views = result.getInt(6);
+				likeCnt = result.getInt(7);
+				disLikeCnt = result.getInt(8);
 				disconnect();
 				stmt.close();
 				result.close();
-				return new FoodEntity(foodId, foodName, likeCnt, disLikeCnt, views);
+				return new PostEntity(postId, userName, postName, postContent, createDate, likeCnt, disLikeCnt, views);
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -83,9 +158,9 @@ public class FoodDatabase {
 		connect();
 		String sql = null;
 		if (voteType.equals("like")) {
-			sql = "UPDATE foods SET like_cnt = like_cnt + 1 WHERE food_id = ?";
+			sql = "UPDATE posts SET like_cnt = like_cnt + 1 WHERE post_id = ?";
 		} else if (voteType.equals("dislike")) {
-			sql = "UPDATE foods SET dislike_cnt = dislike_cnt + 1 WHERE food_id = ?";
+			sql = "UPDATE posts SET dislike_cnt = dislike_cnt + 1 WHERE post_id = ?";
 		} else {
 			return false;
 		}
@@ -110,20 +185,20 @@ public class FoodDatabase {
 		return false;
 	}
 
-	public int getVote(String foodId, String voteType) {
+	public int getVote(String postId, String voteType) {
 		connect();
 		String sql = null;
 		if (voteType.equals("like")) {
-			sql = "SELECT like_cnt FROM foods WHERE food_id = ?";
+			sql = "SELECT like_cnt FROM posts WHERE post_id = ?";
 		} else if (voteType.equals("dislike")) {
-			sql = "SELECT dislike_cnt FROM foods WHERE food_id = ?";
+			sql = "SELECT dislike_cnt FROM posts WHERE post_id = ?";
 		} else {
 			return -1;
 		}
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setString(1, foodId);
+			stmt.setString(1, postId);
 
 			// SQL 실행
 			result = stmt.executeQuery();
@@ -143,7 +218,7 @@ public class FoodDatabase {
 	public boolean existsRows(String id) {
 		connect();
 		boolean isExists = false;
-		String sql = "SELECT * FROM foods WHERE food_id = ?";
+		String sql = "SELECT * FROM posts WHERE post_id = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
@@ -174,7 +249,7 @@ public class FoodDatabase {
 	public int updateViews(String id) {
 		connect();
 		int views = -1;
-		String sql = "UPDATE foods SET views = views + 1 WHERE food_id = ?";
+		String sql = "UPDATE posts SET views = views + 1 WHERE post_id = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
@@ -182,9 +257,9 @@ public class FoodDatabase {
 
 			// SQL 실행
 			int rowsAffected = stmt.executeUpdate();
-			
+
 			if (rowsAffected != 0) {
-				sql = "SELECT views FROM foods WHERE food_id = ?";
+				sql = "SELECT views FROM posts WHERE posts_id = ?";
 				try {
 					stmt = conn.prepareStatement(sql);
 					// 파라미터 바인딩
