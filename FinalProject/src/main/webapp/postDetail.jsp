@@ -31,10 +31,17 @@ label {
 </head>
 <body>
 
-	<h1><%= post.getPostName()%></h1>
+	<h1><%=post.getPostName()%></h1>
 	<section class="post_content_container">
-	<p>좋아요: <%= post.getLikeCnt() %> 싫어요: <%= post.getDisLikeCnt() %> 조회수: <%= post.getViews() %><p>
-	<p><%= post.getPostContent() %><p>
+		<p>작성자: <%=post.getUserName()%> 조회수: <%=post.getViews()%></p>
+		<p><%=post.getPostContent()%></p>
+
+		<button class="vote_btn like">
+			추천(<%=post.getLikeCnt()%>)
+		</button>
+		<button class="vote_btn dislike">
+			비추천(<%=post.getDisLikeCnt()%>)
+		</button>
 	</section>
 
 
