@@ -126,7 +126,9 @@ label {
 					}); // 한 번만 실행되도록 설정
 
 	// 여기에 쿠키 확인하는거 넣으면 될듯.
-	document.querySelector(".comment_container").addEventListener("click", (e) => {
+	document.querySelector(".comment_container").addEventListener("click", voteProesss);
+	document.querySelector(".food_container").addEventListener("click", voteProesss);
+	function voteProesss(e) {
 	    const targetBtn = e.target;
 	    // 클릭한 요소가 .vote_btn인지 확인
 	    if (targetBtn.classList.contains("vote_btn")) {
@@ -144,7 +146,7 @@ label {
 	            increamentVoteCnt(voteType, parentId); // 클릭한 버튼에 따라 처리
 	        }
 	    }
-	});
+	}
 	document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		item.addEventListener("click", (e) => {
 			const currentPageNum = parseInt(document.querySelector("#current_comment_page_number").dataset.commentPage);

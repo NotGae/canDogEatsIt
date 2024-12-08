@@ -30,10 +30,17 @@ label {
 <link rel="stylesheet" href="./resource/main.css">
 </head>
 <body>
-
+	<div id="post_id_info" data-post-id="<%=postId%>" style="display: none"></div>
+	<div id="current_comment_page_number"
+		data-comment-page="<%=commentPage%>" style="display: none"></div>
+	<jsp:include page="/include/nav.jsp"></jsp:include>
 	<h1><%=post.getPostName()%></h1>
-	<section class="post_content_container">
-		<p>작성자: <%=post.getUserName()%> 조회수: <%=post.getViews()%></p>
+	<section class="post_content_container" data-id="<%= post.getPostId() %>">
+		<p>
+			작성자:
+			<%=post.getUserName()%>
+			조회수:
+			<%=post.getViews()%></p>
 		<p><%=post.getPostContent()%></p>
 
 		<button class="vote_btn like">
@@ -71,9 +78,210 @@ label {
 		}
 		%>
 	</ul>
-	<ul class="comment_page_btn" data-parentId="<%=post.getPostId()%>">
+	<ul class="comment_page_btn" data-parentId="<%=postId%>">
 		<li class="back_comment_page_btn comment_page_btn"><<</li>
 		<li class="front_comment_page_btn comment_page_btn">>></li>
 	</ul>
 </body>
+<script>
+document.querySelector(".comment_form").addEventListener("submit",function(event) {
+	event.preventDefault(); // 기본 폼 제출을 막음
+
+	const userName = document.querySelector(".user_name").value;
+	const userPw = document.querySelector(".user_pw").value;
+	const comment = document.querySelector(".comment").value;
+	const parentId = document.querySelector("#post_id_info").dataset.postId;
+	
+	document.querySelector(".user_name").value = "";
+	document.querySelector(".user_pw").value = "";
+	document.querySelector(".comment").value = "";
+	
+	if(userName == '' || userPw == '' || comment == '') {
+		return;
+	}
+	saveComment(parentId, userName, userPw, comment);
+}); // 한 번만 실행되도록 설정
+
+// 여기에 쿠키 확인하는거 넣으면 될듯.
+document.querySelector(".comment_container").addEventListener("click", voteProesss);
+document.querySelector(".post_content_container").addEventListener("click", voteProesss);
+function voteProesss(e) {
+    const targetBtn = e.target;
+    // 클릭한 요소가 .vote_btn인지 확인
+    if (targetBtn.classList.contains("vote_btn")) {
+        const parentId = targetBtn.parentNode.dataset.id;
+        const parentType = targetBtn.parentNode.classList; 
+
+        let voteType = null;
+        if (targetBtn.classList.contains("like")) {
+            voteType = "like";
+        } else if (targetBtn.classList.contains("dislike")) {
+            voteType = "dislike";
+        }
+
+        if (voteType) {
+            increamentVoteCnt(voteType, parentId); // 클릭한 버튼에 따라 처리
+        }
+    }
+}
+document.querySelectorAll(".comment_page_btn").forEach((item) => {
+		item.addEventListener("click", (e) => {
+		const currentPageNum = parseInt(document.querySelector("#current_comment_page_number").dataset.commentPage);
+		const target = e.currentTarget;
+		const parentId = target.parentNode.dataset.parentid;
+	
+		if (target.classList.contains("back_comment_page_btn")) {
+			// 여기서도 뭐 ajax하면 될듯.
+			moveCommentPage(currentPageNum - 5, parentId);
+		} else if (target.classList.contains("front_comment_page_btn")) {
+			moveCommentPage(currentPageNum + 5, parentId);
+		}
+	});
+});
+
+let request = null;
+//댓글등록 버튼 누르면. post로 ajax요청보냄.
+function createRequest() {
+	try {
+		request = new XMLHttpRequest();
+	} catch (failed) {
+		request = null;
+	}	
+	if (request == null)
+		alert('Error creating request object!');
+}
+function saveComment(parentId, userName, userPw, comment) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "sumbitComment.jsp?";
+	let qry = "userName=" + encodeURIComponent(userName) + "&userPw="
+		+ encodeURIComponent(userPw) + "&comment="
+		+ encodeURIComponent(comment) + "&parentId="
+		+ encodeURIComponent(parentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updateComment;
+	request.setRequestHeader("Content-type",
+		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+function increamentVoteCnt(voteType, parentId) {
+	createRequest();
+	if(voteType === null) return;
+	
+	let url = "increaVoteCnt.jsp?";
+	let qry = "voteType=" + encodeURIComponent(voteType) + "&parentId=" + encodeURIComponent(parentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updateVote;
+	request.setRequestHeader("Content-type",
+		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+
+function moveCommentPage(offset, parentId) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "moveCommentPage.jsp?";
+	let qry = "offset=" + encodeURIComponent(offset) + "&parentId=" + encodeURIComponent(parentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updateMoveComment;
+	request.setRequestHeader("Content-type",
+		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+
+
+function updateComment() {
+	// 요청에 성공 시, 진행.
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "success") {
+			const commentId = response.commentId;
+			const userName = response.userName; // 서버에서 보낸 사용자 이름
+			const comment = response.comment; // 서버에서 보낸 댓글 내용
+			const currentTime = response.currentTime; // 서버에서 보낸 댓글 내용
+		
+			let commentContainer = document
+					.querySelector(".comment_container");
+		
+			let htmlString = '<li class="comment" data-id="'  + commentId + '">'
+					+ userName
+					+ ": "
+					+ comment
+					+ " "
+					+ currentTime
+					+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button></li>";
+			// 새로운 댓글을 화면에 추가
+			commentContainer.insertAdjacentHTML("afterbegin", htmlString);
+		} else {
+			console.error(response.message); // 오류 메시지 출력
+		}
+	}
+}
+// 여기엔 쿠키 삽입
+function updateVote() {
+	// 요청에 성공 시, 진행.
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "success") {
+			const parentId = response.parentId;
+			const voteType = response.voteType; 
+			const updatedVoteCnt = response.updatedVoteCnt;
+			
+			const option = "[data-id=" + '"' + parentId + '"' + "]"
+			let entity = document.querySelector(option);
+		
+			if (voteType === 'like') {
+			    // 자식 태그 중 'like_cnt' 클래스를 가진 요소 찾기
+			    const likeBtn = entity.querySelector(".like");
+			    likeBtn.textContent = "추천(" + updatedVoteCnt + ")";
+			} else if (voteType === 'dislike') {
+			    // 자식 태그 중 'dislike_cnt' 클래스를 가진 요소 찾기
+			    const dislikeBtn = entity.querySelector(".dislike");
+			    dislikeBtn.textContent = "비추천(" + updatedVoteCnt + ")";
+			} else {
+			    console.error(response.message); // 오류 메시지 출력
+			}
+		} else {
+			console.error(response.message); // 오류 메시지 출력
+		}
+	}
+}
+
+function updateMoveComment() {
+	// 요청에 성공 시, 진행.
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "success") {
+			const parentId = response.parentId;
+			const commentList = response.commentList; 
+			const pageNum = response.pageNum;
+			if(commentList == null || commentList.length == 0) {
+				return;
+			}
+			
+			let commentContainer = document.querySelector(".comment_container");
+			commentContainer.innerHTML = "";
+			commentList.forEach((comment) => {
+				let htmlString = "<li class='comment' data-id='" + comment.commentId + "'>" +
+				comment.userName + ": " + comment.commentContent + 
+				comment.createDate + 
+				"<button class='vote_btn like'>" +
+					"추천(" + comment.likeCnt + ")" +
+				"</button>" +
+				"<button class='vote_btn dislike'>" +
+					"비추천(" + comment.disLikeCnt + ")" +
+				"</button>" +
+				"</li>";
+				commentContainer.insertAdjacentHTML("beforeend", htmlString);
+			
+			})
+			document.querySelector("#current_comment_page_number").dataset.commentPage = pageNum;
+		} else {
+			console.error(response.message); // 오류 메시지 출력
+		}
+	}
+}
+
+</script>
+
 </html>

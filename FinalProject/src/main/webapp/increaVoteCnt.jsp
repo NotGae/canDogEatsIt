@@ -6,6 +6,7 @@
 <jsp:useBean id="commentdb" class="javabeans.CommentDatabase"
 	scope="page" />
 <jsp:useBean id="fooddb" class="javabeans.FoodDatabase" scope="page" />
+<jsp:useBean id="postdb" class="javabeans.PostDatabase" scope="page" />
 <%
 request.setCharacterEncoding("UTF-8");
 response.setContentType("application/json");
@@ -29,7 +30,7 @@ if (!isVoted) {
 
 	// 쿠키 생성
 	Cookie voteCookie = new Cookie("vote_" + parentId, "true");
-	voteCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
+	voteCookie.setMaxAge(24 * 60 * 60); // 24시간 유지
 	response.addCookie(voteCookie);
 
 	if (fooddb.existsRows(parentId)) {
@@ -38,6 +39,9 @@ if (!isVoted) {
 	} else if (commentdb.existsRows(parentId)) {
 		commentdb.setVote(parentId, voteType);
 		updatedVoteCnt = commentdb.getVote(parentId, voteType);
+	} else if (postdb.existsRows(parentId)) {
+		postdb.setVote(parentId, voteType);
+		updatedVoteCnt = postdb.getVote(parentId, voteType);
 	} else {
 		response.getWriter().write("{\"status\":\"error\", \"message\":\"Failed to update vote data.\"}");
 		return;
