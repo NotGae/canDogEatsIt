@@ -116,7 +116,37 @@ public class CommentDatabase {
 		}
 		return null;
 	}
+	public boolean deleteComment(String commentId, String userPw) {
+		connect();
+		boolean success = false;
 
+		try {
+			
+			String sql = "DELETE FROM comments WHERE comment_id = ? AND user_pw = ?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, commentId);
+			stmt.setString(2, userPw);
+			int rowsAffected = stmt.executeUpdate();
+			if (rowsAffected > 0) {
+				// 성공 응답
+				success = true;
+				disconnect();
+				stmt.close();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		try {
+			disconnect();
+			stmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return success;
+	}
 	public boolean setVote(String parentId, String voteType) {
 		connect();
 		String sql = null;
