@@ -283,7 +283,13 @@ label {
 						+ comment
 						+ " "
 						+ currentTime
-						+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button></li>";
+						+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button>" +
+						"<button type='button' class='show_delete_btn'>X</button> <span " + 
+				        "class='delete_container' style='display: none'> <label><input " +
+						"type='password' class='delete_pw' /></label>" +
+						"<button type='button' class='delete_btn'>삭제</button>" +
+						"</span>" +
+						"</li>";
 				// 새로운 댓글을 화면에 추가
 				commentContainer.insertAdjacentHTML("afterbegin", htmlString);
 			} else if(response.status === "delete") {
@@ -352,6 +358,11 @@ label {
 					"<button class='vote_btn dislike'>" +
 						"비추천(" + comment.disLikeCnt + ")" +
 					"</button>" +
+					"<button type='button' class='show_delete_btn'>X</button> <span " + 
+			        "class='delete_container' style='display: none'> <label><input " +
+					"type='password' class='delete_pw' /></label>" +
+					"<button type='button' class='delete_btn'>삭제</button>" +
+					"</span>" +
 					"</li>";
 					commentContainer.insertAdjacentHTML("beforeend", htmlString);
 				

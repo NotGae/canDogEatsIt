@@ -15,6 +15,27 @@ int commentPage = 0;
 
 ArrayList<CommentEntity> commentList = commentdb.getCommentArray(postId, commentPage);
 PostEntity post = postdb.getPost(postId);
+
+boolean isViewed = false;
+Cookie[] cookies = request.getCookies();
+
+if (cookies != null) {
+	for (Cookie cookie : cookies) {
+		if (cookie.getName().equals("viewed_" + post.getPostId())) {
+	isViewed = true;
+	break;
+		}
+	}
+}
+if (!isViewed) {
+	// 조회수 증가 처리
+	postdb.updateViews(post.getPostId());
+
+	// 쿠키 생성
+	Cookie viewCookie = new Cookie("viewed_" + post.getPostId(), "true");
+	viewCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
+	response.addCookie(viewCookie);
+}
 %>
 
 <!DOCTYPE html>
@@ -35,7 +56,7 @@ label {
 		data-comment-page="<%=commentPage%>" style="display: none"></div>
 	<jsp:include page="/include/nav.jsp"></jsp:include>
 	<h1><%=post.getPostName()%></h1>
-	<section class="post_content_container" data-id="<%= post.getPostId() %>">
+	<section class="post_content_container" data-id="<%=post.getPostId()%>">
 		<p>
 			작성자:
 			<%=post.getUserName()%>
@@ -73,6 +94,11 @@ label {
 			<button class="vote_btn dislike">
 				비추천(<%=commentList.get(i).getDisLikeCnt()%>)
 			</button>
+			<button type="button" class="show_delete_btn">X</button> <span
+			class="delete_container" style="display: none"> <label><input
+					type="password" class="delete_pw" /></label>
+				<button type="button" class="delete_btn">삭제</button>
+		</span>
 		</li>
 		<%
 		}
@@ -104,6 +130,8 @@ document.querySelector(".comment_form").addEventListener("submit",function(event
 
 // 여기에 쿠키 확인하는거 넣으면 될듯.
 document.querySelector(".comment_container").addEventListener("click", voteProesss);
+document.querySelector(".comment_container").addEventListener("click", showDeleteComment);
+document.querySelector(".comment_container").addEventListener("click", deleteCommentPorc);
 document.querySelector(".post_content_container").addEventListener("click", voteProesss);
 function voteProesss(e) {
     const targetBtn = e.target;
@@ -138,7 +166,39 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		}
 	});
 });
+function showDeleteComment(e) {
+	const targetBtn = e.target;
+	if(targetBtn.classList.contains("show_delete_btn")) {
+        const deleteContainer = targetBtn.nextElementSibling; // 형제 요소 선택
+        if (deleteContainer) {
+            // 현재 display 상태에 따라 토글
+            deleteContainer.style.display = deleteContainer.style.display === "none" ? "inline" : "none";
+        }
+	}
+}
+function deleteCommentPorc(e) {
+	const targetBtn = e.target;
+	if(targetBtn.classList.contains("delete_btn")) {
+	      // 현재 클릭한 버튼의 부모 요소 안에서 .delete_pw 찾기
+        const deleteContainer = targetBtn.closest(".delete_container");
+        if (deleteContainer) {
+            const passwordInput = deleteContainer.querySelector(".delete_pw");
+            const userPw = passwordInput.value; // 입력된 비밀번호 값 가져오기
 
+
+            // 비밀번호가 비어 있으면 알림
+            if (!userPw.trim()) {
+                alert("비밀번호를 입력해주세요!");
+                return;
+            }
+
+            // 이후의 삭제 로직 처리
+			const commentElement = targetBtn.closest("li.comment"); // 가장 가까운 li.comment 찾기
+        	const commentId = commentElement.dataset.id; // data-id 값 가져오기
+        	deleteComment(commentId, userPw);
+        }
+	}
+}
 let request = null;
 //댓글등록 버튼 누르면. post로 ajax요청보냄.
 function createRequest() {
@@ -162,6 +222,17 @@ function saveComment(parentId, userName, userPw, comment) {
 	request.onreadystatechange = updateComment;
 	request.setRequestHeader("Content-type",
 		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+function deleteComment(commentId, userPw) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "deleteComment.jsp?";
+	let qry = "userPw=" + encodeURIComponent(userPw) + "&commentId=" + encodeURIComponent(commentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updateComment;
+	request.setRequestHeader("Content-type",
+			"application/x-www-form-urlencoded");
 	request.send(qry)
 }
 function increamentVoteCnt(voteType, parentId) {
@@ -204,15 +275,28 @@ function updateComment() {
 					.querySelector(".comment_container");
 		
 			let htmlString = '<li class="comment" data-id="'  + commentId + '">'
-					+ userName
-					+ ": "
-					+ comment
-					+ " "
-					+ currentTime
-					+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button></li>";
+				+ userName
+				+ ": "
+				+ comment
+				+ " "
+				+ currentTime
+				+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button>" +
+				"<button type='button' class='show_delete_btn'>X</button> <span " + 
+		        "class='delete_container' style='display: none'> <label><input " +
+				"type='password' class='delete_pw' /></label>" +
+				"<button type='button' class='delete_btn'>삭제</button>" +
+				"</span>" +
+				"</li>";
 			// 새로운 댓글을 화면에 추가
 			commentContainer.insertAdjacentHTML("afterbegin", htmlString);
-		} else {
+		}else if(response.status === "delete") {
+			const commentId = response.commentId;
+			const commentContainer = document.querySelector(".comment_container");
+		    const commentElement = commentContainer.querySelector('li[data-id="' + commentId + '"]');
+		    if (commentElement) {
+		        commentElement.remove();
+		    }
+		}else {
 			console.error(response.message); // 오류 메시지 출력
 		}
 	}
@@ -271,6 +355,11 @@ function updateMoveComment() {
 				"<button class='vote_btn dislike'>" +
 					"비추천(" + comment.disLikeCnt + ")" +
 				"</button>" +
+				"<button type='button' class='show_delete_btn'>X</button> <span " + 
+		        "class='delete_container' style='display: none'> <label><input " +
+				"type='password' class='delete_pw' /></label>" +
+				"<button type='button' class='delete_btn'>삭제</button>" +
+				"</span>" +
 				"</li>";
 				commentContainer.insertAdjacentHTML("beforeend", htmlString);
 			
