@@ -30,6 +30,13 @@ if (searchKeyword.equals("") || searchType.equals("")) {
 } else {
 	posts = postdb.getPostArrayByKeyword(postPageOffset, searchKeyword, searchType, 5);
 }
+
+boolean isLoggedIn = false;
+if (session != null && session.getAttribute("isLoggedIn") != null) {
+	isLoggedIn = (boolean) session.getAttribute("isLoggedIn");
+}
+
+
 %>
 
 <body>
@@ -51,10 +58,14 @@ if (searchKeyword.equals("") || searchType.equals("")) {
 		<%
 		for (PostEntity post : posts) {
 		%>
-		<li><a href="postDetail.jsp?postId=<%=post.getPostId()%>">작성자:
+		<li data-id="<%= post.getPostId() %>"><a href="postDetail.jsp?postId=<%=post.getPostId()%>">작성자:
 				<%=post.getUserName()%>, 제목: <%=post.getPostName()%>, 조회수: <%=post.getViews()%>,
 				좋아요: <%=post.getLikeCnt()%>, 싫어요: <%=post.getDisLikeCnt()%>, 작성일시: <%=post.getCreateDate()%>
-		</a></li>
+		</a>
+		<% if(isLoggedIn) { %>
+		<button class="post_delete_btn">X</button>
+		<% } %>
+		</li>
 		<%
 		}
 		%>
@@ -89,7 +100,13 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		
 	});
 });
-
+document.querySelector(".post_container").addEventListener("click", function(e) {
+	const deleteBtn = e.target;
+	if(deleteBtn.classList.contains("post_delete_btn")) {
+		const postId = deleteBtn.parentNode.dataset.id;
+		detetePostByAdmin(postId);
+	}
+})
 let request = null;
 //댓글등록 버튼 누르면. post로 ajax요청보냄.
 function createRequest() {
@@ -101,7 +118,17 @@ function createRequest() {
 	if (request == null)
 		alert('Error creating request object!');
 }
-
+function detetePostByAdmin(postId) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "deletePost.jsp?";
+	let qry = "postId=" + encodeURIComponent(postId);
+	request.open("POST", url, true);
+	request.onreadystatechange = redirectCommunity;
+	request.setRequestHeader("Content-type",
+			"application/x-www-form-urlencoded");
+	request.send(qry)
+}
 function movePostPage(offset, searchKeyword, searchType, minLikes) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
@@ -140,6 +167,17 @@ function updateMovePost() {
         	document.querySelector("#current_post_page_number").dataset.postPage = pageNum;
 		} else {
 			console.error(response.message); // 오류 메시지 출력
+		}
+	}
+}
+function redirectCommunity() {
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "error") {
+			alert('삭제에 실패했습니다. 다시 시도해주세요.');
+		} else {
+			alert('삭제에 성공했습니다.');
+			window.location.href = "popularPostsPage.jsp";
 		}
 	}
 }

@@ -45,6 +45,11 @@ if (food != null) {
 	}
 	commentList = commentdb.getCommentArray(food.getFoodId(), commentPage, orderType);
 }
+
+boolean isLoggedIn = false;
+if (session != null && session.getAttribute("isLoggedIn") != null) {
+	isLoggedIn = (boolean) session.getAttribute("isLoggedIn");
+}
 %>
 <!DOCTYPE html>
 <html>
@@ -118,6 +123,9 @@ label {
 					type="password" class="delete_pw" /></label>
 				<button type="button" class="delete_btn">삭제</button>
 		</span>
+		<% if (isLoggedIn) { %>
+		<button class="admin_delete_btn">adminX</button>
+		<% } %>
 		</li>
 		<%
 		}
@@ -170,6 +178,7 @@ label {
 	// 여기에 쿠키 확인하는거 넣으면 될듯.
 	document.querySelector(".comment_container").addEventListener("click", voteProesss);
 	document.querySelector(".comment_container").addEventListener("click", showDeleteComment);
+	document.querySelector(".comment_container").addEventListener("click", adminDeleteComment);
 	document.querySelector(".comment_container").addEventListener("click", deleteCommentPorc);
 	document.querySelector(".food_container").addEventListener("click", voteProesss);
 	
@@ -180,7 +189,6 @@ label {
 	    
 	    moveCommentPage(0, parentId, event.target.value);
 	});
-	
 	
 	function voteProesss(e) {
 	    const targetBtn = e.target;
@@ -201,6 +209,13 @@ label {
 	        }
 	    }
 	}
+	function adminDeleteComment(e) {
+		const deleteBtn = e.target;
+		if(deleteBtn.classList.contains("admin_delete_btn")) {
+			const commentId = deleteBtn.parentNode.dataset.id;
+			deleteCommentByAdmin(commentId);
+		}
+	}
 	function showDeleteComment(e) {
 		const targetBtn = e.target;
 		if(targetBtn.classList.contains("show_delete_btn")) {
@@ -220,13 +235,11 @@ label {
 	            const passwordInput = deleteContainer.querySelector(".delete_pw");
 	            const userPw = passwordInput.value; // 입력된 비밀번호 값 가져오기
 
-
 	            // 비밀번호가 비어 있으면 알림
 	            if (!userPw.trim()) {
 	                alert("비밀번호를 입력해주세요!");
 	                return;
 	            }
-
 	            // 이후의 삭제 로직 처리
 				const commentElement = targetBtn.closest("li.comment"); // 가장 가까운 li.comment 찾기
             	const commentId = commentElement.dataset.id; // data-id 값 가져오기
@@ -269,6 +282,17 @@ label {
 				+ encodeURIComponent(userPw) + "&comment="
 				+ encodeURIComponent(comment) + "&parentId="
 				+ encodeURIComponent(parentId);
+		request.open("POST", url, true);
+		request.onreadystatechange = updateComment;
+		request.setRequestHeader("Content-type",
+				"application/x-www-form-urlencoded");
+		request.send(qry)
+	}
+	function deleteCommentByAdmin(commentId) {
+		createRequest();
+		// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+		let url = "deleteComment.jsp?";
+		let qry = "commentId=" + encodeURIComponent(commentId);
 		request.open("POST", url, true);
 		request.onreadystatechange = updateComment;
 		request.setRequestHeader("Content-type",

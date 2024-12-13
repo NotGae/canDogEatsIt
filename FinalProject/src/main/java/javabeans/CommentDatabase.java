@@ -45,17 +45,18 @@ public class CommentDatabase {
 			e.printStackTrace();
 		}
 	}
+
 	public ArrayList<CommentEntity> getCommentArray(String parentId, int offset, String orderType) {
 		connect();
 		ArrayList<CommentEntity> list = new ArrayList<>();
 
 		try {
 			String sql = "";
-			if(orderType.equals("mostRecent")) {
+			if (orderType.equals("mostRecent")) {
 				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date DESC LIMIT ?, 5";
-			} else if(orderType.equals("earliestFirst")) {
+			} else if (orderType.equals("earliestFirst")) {
 				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date ASC LIMIT ?, 5";
-			} else if(orderType.equals("mostLike")) {
+			} else if (orderType.equals("mostLike")) {
 				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY like_cnt DESC LIMIT ?, 5";
 			} else {
 				return list;
@@ -124,16 +125,23 @@ public class CommentDatabase {
 		}
 		return null;
 	}
-	public boolean deleteComment(String commentId, String userPw) {
+
+	public boolean deleteComment(String commentId, String userPw, boolean isAdmin) {
 		connect();
 		boolean success = false;
-
 		try {
-			
-			String sql = "DELETE FROM comments WHERE comment_id = ? AND user_pw = ?";
+
+			String sql = "";
+			if (isAdmin == false) {
+				sql = "DELETE FROM comments WHERE comment_id = ? AND user_pw = ?";
+			} else {
+				sql = "DELETE FROM comments WHERE comment_id = ?";
+			}
 			stmt = conn.prepareStatement(sql);
 			stmt.setString(1, commentId);
-			stmt.setString(2, userPw);
+			if (isAdmin == false) {
+				stmt.setString(2, userPw);
+			}
 			int rowsAffected = stmt.executeUpdate();
 			if (rowsAffected > 0) {
 				// 성공 응답
@@ -144,8 +152,7 @@ public class CommentDatabase {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
+
 		try {
 			disconnect();
 			stmt.close();
@@ -155,6 +162,7 @@ public class CommentDatabase {
 		}
 		return success;
 	}
+
 	public boolean setVote(String parentId, String voteType) {
 		connect();
 		String sql = null;
@@ -230,7 +238,7 @@ public class CommentDatabase {
 			if (result.next()) {
 				isExists = true;
 			} else {
-				isExists = false; 
+				isExists = false;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -246,6 +254,7 @@ public class CommentDatabase {
 		}
 		return isExists;
 	}
+
 	public boolean existsRowsByParent(String id) {
 		connect();
 		boolean isExists = false;
@@ -260,7 +269,7 @@ public class CommentDatabase {
 			if (result.next()) {
 				isExists = true;
 			} else {
-				isExists = false; 
+				isExists = false;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

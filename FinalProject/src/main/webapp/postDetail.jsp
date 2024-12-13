@@ -41,6 +41,10 @@ if (!isViewed) {
 	viewCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
 	response.addCookie(viewCookie);
 }
+boolean isLoggedIn = false;
+if (session != null && session.getAttribute("isLoggedIn") != null) {
+	isLoggedIn = (boolean) session.getAttribute("isLoggedIn");
+}
 %>
 
 <!DOCTYPE html>
@@ -117,6 +121,9 @@ label {
 					type="password" class="delete_pw" /></label>
 				<button type="button" class="delete_btn">삭제</button>
 		</span>
+		<% if (isLoggedIn) { %>
+		<button class="admin_delete_btn">adminX</button>
+		<% } %>
 		</li>
 		<%
 		}
@@ -157,6 +164,7 @@ document.querySelector(".post_content_container").addEventListener("click", dele
 // 여기에 쿠키 확인하는거 넣으면 될듯.
 document.querySelector(".comment_container").addEventListener("click", voteProesss);
 document.querySelector(".comment_container").addEventListener("click", showDeleteComment);
+document.querySelector(".comment_container").addEventListener("click", adminDeleteComment);
 document.querySelector(".comment_container").addEventListener("click", deleteCommentPorc);
 document.querySelector(".post_content_container").addEventListener("click", voteProesss);
 function voteProesss(e) {
@@ -193,6 +201,13 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		}
 	});
 });
+function adminDeleteComment(e) {
+	const deleteBtn = e.target;
+	if(deleteBtn.classList.contains("admin_delete_btn")) {
+		const commentId = deleteBtn.parentNode.dataset.id;
+		deleteCommentByAdmin(commentId);
+	}
+}
 function showDeleteComment(e) {
 	const targetBtn = e.target;
 	if(targetBtn.classList.contains("show_delete_btn")) {
@@ -234,14 +249,11 @@ function deletePostPorc(e) {
         if (deleteContainer) {
             const passwordInput = deleteContainer.querySelector(".delete_pw");
             const userPw = passwordInput.value; // 입력된 비밀번호 값 가져오기
-
-
             // 비밀번호가 비어 있으면 알림
             if (!userPw.trim()) {
                 alert("비밀번호를 입력해주세요!");
                 return;
             }
-
             // 이후의 삭제 로직 처리
         	const postId = document.querySelector("#post_id_info").dataset.postId;
         	deletePost(postId, userPw);
@@ -271,6 +283,17 @@ function saveComment(parentId, userName, userPw, comment) {
 	request.onreadystatechange = updateComment;
 	request.setRequestHeader("Content-type",
 		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+function deleteCommentByAdmin(commentId) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "deleteComment.jsp?";
+	let qry = "commentId=" + encodeURIComponent(commentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updateComment;
+	request.setRequestHeader("Content-type",
+			"application/x-www-form-urlencoded");
 	request.send(qry)
 }
 function deleteComment(commentId, userPw) {

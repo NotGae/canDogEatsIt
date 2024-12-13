@@ -375,10 +375,15 @@ public class PostDatabase {
 		return views;
 	}
 
-	public boolean deletePost(String postId, String userPw) {
+	public boolean deletePost(String postId, String userPw, boolean isAdmin) {
 		boolean success = false;
 		connect();
-		String sql1 = "DELETE FROM posts WHERE post_id = ? AND user_pw = ?";
+		String sql1 = "";
+		if (isAdmin == false) {
+			sql1 = "DELETE FROM posts WHERE post_id = ? AND user_pw = ?";
+		} else {
+			sql1 = "DELETE FROM posts WHERE post_id = ?";
+		}
 		String sql2 = "DELETE FROM comments WHERE parent_id = ?";
 
 		try (PreparedStatement stmt1 = conn.prepareStatement(sql1);
@@ -389,7 +394,9 @@ public class PostDatabase {
 
 			// 게시글 삭제
 			stmt1.setString(1, postId);
-			stmt1.setString(2, userPw);
+			if (isAdmin == false) {
+				stmt1.setString(2, userPw);
+			}
 			int rowsAffected1 = stmt1.executeUpdate();
 
 			if (rowsAffected1 > 0) {
