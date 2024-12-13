@@ -20,19 +20,30 @@
 <%
 int postPageOffset = 0;
 
-ArrayList<RequestedFoodEntity> posts = requestedfooddb.getRequestedFoodArray(postPageOffset);
+String orderType = "mostRecent"; // earliestFirst, mostLike 
+if (request.getParameter("orderType") != null) {
+	orderType = request.getParameter("orderType");
+}
+ArrayList<RequestedFoodEntity> posts = requestedfooddb.getRequestedFoodArray(postPageOffset, orderType);
 %>
 
 <body>
 	<jsp:include page="/include/nav.jsp"></jsp:include>
 	<div id="current_post_page_number" data-post-page="<%=postPageOffset%>"
 		style="display: none"></div>
+	<div id="request_order_type" data-order-type="<%=orderType%>"
+		style="display: none"></div>
+	<select class="order_type" name="orderType">
+		<option value="mostRecent" SELECTED>최신순</option>
+		<option value="earliestFirst">오래된순</option>
+		<option value="mostLike">요청순</option>
+	</select>
 	<ul class="post_container">
 		<%
 		for (RequestedFoodEntity post : posts) {
 		%>
-		<li data-id="<%=post.getRequestedFoodId()%>"><%=post.getRequestedFoodName()%>,
-			<%=post.getRequestedCnt()%>, <%=post.getRequestedDate()%>
+		<li data-id="<%=post.getRequestedFoodId()%>">요청음식: <%=post.getRequestedFoodName()%>,
+			요청횟수: <%=post.getRequestedCnt()%>, 최초요청일: <%=post.getRequestedDate()%>
 			<button class="add_food">등록</button>
 			<button class="remove_food">거부</button></li>
 		<%
@@ -48,20 +59,25 @@ ArrayList<RequestedFoodEntity> posts = requestedfooddb.getRequestedFoodArray(pos
 document.querySelectorAll(".comment_page_btn").forEach((item) => {
 	item.addEventListener("click", (e) => {
 		const currentPageNum = parseInt(document.querySelector("#current_post_page_number").dataset.postPage);
+		const orderType = document.querySelector("#request_order_type").dataset.orderType;
 		const target = e.currentTarget;
 		if(currentPageNum - 10 < 0) return;
 		if (target.classList.contains("back_comment_page_btn")) {
-			// 여기서도 뭐 ajax하면 될듯.
-			movePostPage(currentPageNum - 10);
+			movePostPage(currentPageNum - 10, orderType);
         } else if (target.classList.contains("front_comment_page_btn")) {
-        	movePostPage(currentPageNum + 10);
+        	movePostPage(currentPageNum + 10, orderType);
         }
-		
 	});
 });
+
+document.querySelector(".order_type").addEventListener("change", function(event) {
+    document.querySelector("#request_order_type").dataset.orderType = event.target.value;
+    document.querySelector("#current_post_page_number").dataset.commentPage = 0;
+    movePostPage(0, event.target.value);
+});
+
 document.querySelector(".post_container").addEventListener("click", decideFood);
 let request = null;
-//댓글등록 버튼 누르면. post로 ajax요청보냄.
 function createRequest() {
 	try {
 		request = new XMLHttpRequest();
@@ -109,11 +125,11 @@ function updatePage() {
 		}
 	}
 }
-function movePostPage(offset) {
+function movePostPage(offset, orderType) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
 	let url = "moveRequstPage.jsp?";
-	let qry = "offset=" + encodeURIComponent(offset);
+	let qry = "offset=" + encodeURIComponent(offset) + "&orderType=" + encodeURIComponent(orderType);
 	request.open("POST", url, true);
 	request.onreadystatechange = updateMovePost;
 	request.setRequestHeader("Content-type",
@@ -135,9 +151,7 @@ function updateMovePost() {
 			postContainer.innerHTML = "";
 			
 			postList.forEach((post) => {
-				let htmlString = "<li><a href='postDetail.jsp?postId=" +
-						post.getPostId() + "'>작성자: " + post.getUserName() + ", 제목: " + post.getPostName() + ", 조회수: " + post.getViews() + ", 좋아요: " + 
-						post.getLikeCnt() + ", 싫어요: " + post.getDisLikeCnt() + ", 작성일시: " + post.getCreateDate() + "</a></li>"; 
+				let htmlString = "<li data-id=" + post.requestedFoodId + "> 요청음식: " + post.requestedFoodName + ", 요청횟수: " + post.requestedCnt + ", 최초요청일: " + post.requestedDate + "<button class='add_food'>등록</button> <button class='remove_food'>거부</button></li>";
 				postContainer.insertAdjacentHTML("beforeend", htmlString);
 			
 			})

@@ -15,6 +15,8 @@ request.setCharacterEncoding("UTF-8");
 response.setContentType("application/json");
 
 String offset = request.getParameter("offset");
+String orderType = request.getParameter("orderType");
+
 ArrayList<RequestedFoodEntity> postList = null;
 
 class ResponseWrapper {
@@ -29,7 +31,7 @@ class ResponseWrapper {
 	}
 }
 if (Integer.parseInt(offset) >= 0) {
-	postList = requestedfooddb.getRequestedFoodArray(Integer.parseInt(offset));
+	postList = requestedfooddb.getRequestedFoodArray(Integer.parseInt(offset), orderType);
 }
 // Jackson: com.fasterxml.jackson.core:jackson-databind 아님 Gson: com.google.code.gson:gson로 변환해서 보내기.
 if (postList == null) {

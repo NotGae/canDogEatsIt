@@ -75,13 +75,21 @@ public class RequestedFoodDatabase {
 		return null;
 	}
 
-	public ArrayList<RequestedFoodEntity> getRequestedFoodArray(int offset) {
+	public ArrayList<RequestedFoodEntity> getRequestedFoodArray(int offset, String orderType) {
 		connect();
 		ArrayList<RequestedFoodEntity> list = new ArrayList<>();
 
 		try {
-			// student스키마 안에 있는 student_info 테이블에 접근.
-			String sql = "SELECT * FROM requested_foods ORDER BY requested_date DESC LIMIT ?, 15";
+			String sql = "";
+			if(orderType.equals("mostRecent")) {
+				sql = "SELECT * FROM requested_foods ORDER BY requested_date DESC LIMIT ?, 15";
+			} else if(orderType.equals("earliestFirst")) {
+				sql = "SELECT * FROM requested_foods ORDER BY requested_date ASC LIMIT ?, 15";
+			} else if(orderType.equals("mostLike")) {
+				sql = "SELECT * FROM requested_foods ORDER BY requested_cnt DESC LIMIT ?, 15";
+			} else {
+				return list;
+			}
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
 			stmt.setInt(1, offset);
