@@ -47,16 +47,17 @@ public class PostDatabase {
 		}
 	}
 
-	public ArrayList<PostEntity> getPostArray(int offset) {
+	public ArrayList<PostEntity> getPostArray(int offset, int minLikes) {
 		connect();
 		ArrayList<PostEntity> list = new ArrayList<>();
 
 		try {
 			// student스키마 안에 있는 student_info 테이블에 접근.
-			String sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts ORDER BY create_date DESC LIMIT ?, 10";
+			String sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setInt(1, offset);
+			stmt.setInt(1, minLikes);
+			stmt.setInt(2, offset);
 			// SQL 실행
 			result = stmt.executeQuery();
 			// List<comment>
@@ -81,25 +82,67 @@ public class PostDatabase {
 		}
 	}
 
-	public ArrayList<PostEntity> getPostArrayByKeyword(int offset, String keyword, String searchType) {
+	public ArrayList<PostEntity> getPostArrayByKeyword(int offset, String keyword, String searchType, int minLikes) {
 		connect();
 		ArrayList<PostEntity> list = new ArrayList<>();
 
 		try {
 			String sql = "";
-			if(searchType.equals("title")) {
-				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_name LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
-			} else if(searchType.equals("content")) {
-				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_content LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
-			} else if(searchType.equals("user")) {
-				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE user_name LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
+			if (searchType.equals("title")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_name LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if (searchType.equals("content")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_content LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if (searchType.equals("user")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE user_name LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
 			} else {
 				return list;
 			}
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
 			stmt.setString(1, "%" + keyword + "%"); // LIKE 검색을 위한 패턴
-			stmt.setInt(2, offset);
+			stmt.setInt(2, minLikes);
+			stmt.setInt(3, offset);
+			// SQL 실행
+			result = stmt.executeQuery();
+			while (result.next()) {
+				PostEntity post = new PostEntity(result.getString(1), result.getString(2), result.getString(3),
+						result.getString(4), result.getString(5), result.getInt(6), result.getInt(7), result.getInt(8));
+				list.add(post);
+			}
+			disconnect();
+			stmt.close();
+			result.close();
+
+			return list;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			disconnect();
+
+			return list;
+		}
+	}
+
+	public ArrayList<PostEntity> getPostArrayByLikes(int offset, String keyword, String searchType, int minLikes) {
+		connect();
+		ArrayList<PostEntity> list = new ArrayList<>();
+
+		try {
+			String sql = "";
+			if (searchType.equals("title")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_name LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if (searchType.equals("content")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_content LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if (searchType.equals("user")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE user_name LIKE ? AND like_cnt >= ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else {
+				return list;
+			}
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setString(1, "%" + keyword + "%"); // LIKE 검색을 위한 패턴
+			stmt.setInt(2, minLikes);
+			stmt.setInt(3, offset);
 			// SQL 실행
 			result = stmt.executeQuery();
 			while (result.next()) {

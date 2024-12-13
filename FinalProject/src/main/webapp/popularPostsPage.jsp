@@ -25,11 +25,10 @@ if (request.getParameter("searchKeyword") != null) {
 if (request.getParameter("searchType") != null) {
 	searchType = request.getParameter("searchType");
 }
-
 if (searchKeyword.equals("") || searchType.equals("")) {
-	posts = postdb.getPostArray(postPageOffset, 0);
+	posts = postdb.getPostArray(postPageOffset, 5);
 } else {
-	posts = postdb.getPostArrayByKeyword(postPageOffset, searchKeyword, searchType, 0);
+	posts = postdb.getPostArrayByKeyword(postPageOffset, searchKeyword, searchType, 5);
 }
 %>
 
@@ -81,14 +80,11 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		const searchKeyword = document.querySelector("#search_keyword").dataset.keyword;
 		const searchType = document.querySelector("#saerch_type").dataset.searchtype;
 		const target = e.currentTarget;
-		
-		if(currentPageNum - 10 < 0) {
-			return;
-		}
 		if (target.classList.contains("back_comment_page_btn")) {
-			movePostPage(currentPageNum - 10, searchKeyword, searchType);
+			// 여기서도 뭐 ajax하면 될듯.
+			movePostPage(currentPageNum - 10, searchKeyword, searchType, 5);
         } else if (target.classList.contains("front_comment_page_btn")) {
-        	movePostPage(currentPageNum + 10, searchKeyword, searchType);
+        	movePostPage(currentPageNum + 10, searchKeyword, searchType, 5);
         }
 		
 	});
@@ -106,13 +102,14 @@ function createRequest() {
 		alert('Error creating request object!');
 }
 
-function movePostPage(offset, searchKeyword, searchType) {
+function movePostPage(offset, searchKeyword, searchType, minLikes) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
 	let url = "movePostPage.jsp?";
 	let qry = "offset=" + encodeURIComponent(offset)
 	+ "&searchKeyword=" + encodeURIComponent(searchKeyword)
-	+ "&searchType=" + encodeURIComponent(searchType);
+	+ "&searchType=" + encodeURIComponent(searchType)
+	+ "&minLikes=" + encodeURIComponent(minLikes);
 	request.open("POST", url, true);
 	request.onreadystatechange = updateMovePost;
 	request.setRequestHeader("Content-type",
