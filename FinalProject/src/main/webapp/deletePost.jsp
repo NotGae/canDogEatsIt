@@ -4,17 +4,19 @@
 
 <jsp:useBean id="commentdb" class="javabeans.CommentDatabase"
 	scope="page" />
+<jsp:useBean id="postdb" class="javabeans.PostDatabase"
+	scope="page" />
 <%
 request.setCharacterEncoding("UTF-8");
 response.setContentType("application/json");
 
-String commentId = request.getParameter("commentId");
+String postId = request.getParameter("postId");
 String userPw = request.getParameter("userPw");
 
-boolean success = commentdb.deleteComment(commentId, userPw);
-if (success == true) {
+boolean success = postdb.deletePost(postId, userPw);
+if (success) {
 	// 성공 응답
-	response.getWriter().write("{\"status\":\"delete\", \"commentId\":\"" + commentId + "\"}");
+	response.getWriter().write("{\"status\":\"success\", \"message\":\"Post deleted successfully.\"}");
 } else {
 	// 실패 응답
 	response.getWriter().write("{\"status\":\"error\", \"message\":\"Failed to delete data.\"}");

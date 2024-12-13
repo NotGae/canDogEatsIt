@@ -7,7 +7,7 @@ import java.util.UUID;
 import javax.sql.*;
 import javax.naming.*;
 
-public class FoodDatabase {
+public class RequestedFoodDatabase {
 
 	// DBCP
 	private Context ctx = null;
@@ -17,7 +17,7 @@ public class FoodDatabase {
 	private PreparedStatement stmt = null;
 	private ResultSet result = null;
 
-	public FoodDatabase() {
+	public RequestedFoodDatabase() {
 
 		try {
 			ctx = new InitialContext();
@@ -47,32 +47,26 @@ public class FoodDatabase {
 		}
 	}
 
-	public FoodEntity getFood(String FoodName) {
+	public RequestedFoodEntity getRequestedFood(String id) {
 		connect();
 
-		// student스키마 안에 있는 student_info 테이블에 접근.
-		String sql = "SELECT * FROM foods WHERE food_name = ?";
+		String sql = "SELECT requested_food_id, food_name FROM requested_foods WHERE requested_food_id = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setString(1, FoodName);
+			stmt.setString(1, id);
 
 			// SQL 실행
 			result = stmt.executeQuery();
-			String foodId = "";
-			int likeCnt = -1, disLikeCnt = -1, views = -1;
-			String foodName = "";
+			String foodId = "", foodName = "";
 			if (result.next()) {
 				foodId = result.getString(1);
 				foodName = result.getString(2);
-				likeCnt = result.getInt(3);
-				disLikeCnt = result.getInt(4);
-				views = result.getInt(5);
 
 				disconnect();
 				stmt.close();
 				result.close();
-				return new FoodEntity(foodId, foodName, likeCnt, disLikeCnt, views);
+				return new RequestedFoodEntity(foodId, foodName, 0, "");
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -80,15 +74,50 @@ public class FoodDatabase {
 		}
 		return null;
 	}
-	public boolean addFood(String id, String foodName) {
+
+	public ArrayList<RequestedFoodEntity> getRequestedFoodArray(int offset) {
+		connect();
+		ArrayList<RequestedFoodEntity> list = new ArrayList<>();
+
+		try {
+			// student스키마 안에 있는 student_info 테이블에 접근.
+			String sql = "SELECT * FROM requested_foods ORDER BY requested_date DESC LIMIT ?, 5";
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setInt(1, offset);
+			// SQL 실행
+			result = stmt.executeQuery();
+			// List<comment>
+			while (result.next()) {
+				RequestedFoodEntity food = new RequestedFoodEntity(result.getString(1), result.getString(2),
+						result.getInt(3), result.getString(4));
+				list.add(food);
+			}
+			disconnect();
+			stmt.close();
+			result.close();
+
+			return list;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			disconnect();
+
+			return null;
+		}
+	}
+
+	public boolean addRequestedFood(String foodName, String currnetTime) {
 		connect();
 		boolean success = false;
 
 		try {
-			String sql = "INSERT INTO foods(food_id, food_name) VALUES (?, ?)";
+			UUID uuid = UUID.randomUUID();
+			String sql = "INSERT INTO requested_foods(requested_food_id, food_name, requested_date) VALUES (?, ?, ?)";
 			stmt = conn.prepareStatement(sql);
-			stmt.setString(1, id);
+			stmt.setString(1, uuid.toString());
 			stmt.setString(2, foodName);
+			stmt.setString(3, currnetTime);
 
 			int rowsAffected = stmt.executeUpdate();
 			if (rowsAffected > 0) {
@@ -110,71 +139,39 @@ public class FoodDatabase {
 		return success;
 	}
 
-	public boolean setVote(String parentId, String voteType) {
+	public boolean deleteRequestedFood(String id) {
 		connect();
-		String sql = null;
-		if (voteType.equals("like")) {
-			sql = "UPDATE foods SET like_cnt = like_cnt + 1 WHERE food_id = ?";
-		} else if (voteType.equals("dislike")) {
-			sql = "UPDATE foods SET dislike_cnt = dislike_cnt + 1 WHERE food_id = ?";
-		} else {
-			return false;
-		}
-		try {
-			stmt = conn.prepareStatement(sql);
-			// 파라미터 바인딩
-			stmt.setString(1, parentId);
+		boolean success = false;
 
-			// SQL 실행
+		try {
+
+			String sql = "DELETE FROM requested_foods WHERE requested_food_id = ?";
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, id);
 			int rowsAffected = stmt.executeUpdate();
-
-			disconnect();
-			stmt.close();
-			if (rowsAffected != 0) {
-				return true;
-			} else {
-				return false;
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return false;
-	}
-
-	public int getVote(String foodId, String voteType) {
-		connect();
-		String sql = null;
-		if (voteType.equals("like")) {
-			sql = "SELECT like_cnt FROM foods WHERE food_id = ?";
-		} else if (voteType.equals("dislike")) {
-			sql = "SELECT dislike_cnt FROM foods WHERE food_id = ?";
-		} else {
-			return -1;
-		}
-		try {
-			stmt = conn.prepareStatement(sql);
-			// 파라미터 바인딩
-			stmt.setString(1, foodId);
-
-			// SQL 실행
-			result = stmt.executeQuery();
-			if (result.next()) {
-				int cnt = result.getInt(1);
+			if (rowsAffected > 0) {
+				// 성공 응답
+				success = true;
 				disconnect();
 				stmt.close();
-				result.close();
-				return cnt;
 			}
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return -1;
+		try {
+			disconnect();
+			stmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return success;
 	}
 
 	public boolean existsRows(String id) {
 		connect();
 		boolean isExists = false;
-		String sql = "SELECT * FROM foods WHERE food_id = ?";
+		String sql = "SELECT * FROM requested_foods WHERE requested_food_id = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
@@ -202,40 +199,26 @@ public class FoodDatabase {
 		return isExists;
 	}
 
-	public int updateViews(String id) {
+	public boolean existsRowsByFoodName(String foodName) {
 		connect();
-		int views = -1;
-		String sql = "UPDATE foods SET views = views + 1 WHERE food_id = ?";
+		boolean isExists = false;
+		String sql = "SELECT * FROM requested_foods WHERE food_name = ?";
 		try {
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
-			stmt.setString(1, id);
+			stmt.setString(1, foodName);
 
 			// SQL 실행
-			int rowsAffected = stmt.executeUpdate();
-			
-			if (rowsAffected != 0) {
-				sql = "SELECT views FROM foods WHERE food_id = ?";
-				try {
-					stmt = conn.prepareStatement(sql);
-					// 파라미터 바인딩
-					stmt.setString(1, id);
-
-					// SQL 실행
-					result = stmt.executeQuery();
-					if (result.next()) {
-						views = result.getInt(1);
-					}
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
+			result = stmt.executeQuery();
+			if (result.next()) {
+				isExists = true;
 			} else {
-				return -1;
+				isExists = false;
 			}
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+
 		disconnect();
 		try {
 			result.close();
@@ -244,6 +227,30 @@ public class FoodDatabase {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return views;
+		return isExists;
+	}
+	
+	public boolean setRequestCnt(String foodName) {
+		connect();
+		String sql = "UPDATE requested_foods SET requested_cnt = requested_cnt + 1 WHERE food_name = ?";
+		try {
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setString(1, foodName);
+
+			// SQL 실행
+			int rowsAffected = stmt.executeUpdate();
+
+			disconnect();
+			stmt.close();
+			if (rowsAffected != 0) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 }

@@ -49,6 +49,7 @@ label {
 }
 </style>
 <link rel="stylesheet" href="./resource/main.css">
+<link rel="stylesheet" href="./resource/postDetail.css">
 </head>
 <body>
 	<div id="post_id_info" data-post-id="<%=postId%>" style="display: none"></div>
@@ -62,6 +63,11 @@ label {
 			<%=post.getUserName()%>
 			조회수:
 			<%=post.getViews()%></p>
+		<button type="button" class="show_delete_btn">X</button>
+		<span class="delete_container" style="display: none"> <label><input
+				type="password" class="delete_pw" /></label>
+			<button type="button" class="delete_btn">삭제</button>
+		</span>
 		<p><%=post.getPostContent()%></p>
 
 		<button class="vote_btn like">
@@ -127,7 +133,8 @@ document.querySelector(".comment_form").addEventListener("submit",function(event
 	}
 	saveComment(parentId, userName, userPw, comment);
 }); // 한 번만 실행되도록 설정
-
+document.querySelector(".post_content_container").addEventListener("click", showDeleteComment);
+document.querySelector(".post_content_container").addEventListener("click", deletePostPorc);
 // 여기에 쿠키 확인하는거 넣으면 될듯.
 document.querySelector(".comment_container").addEventListener("click", voteProesss);
 document.querySelector(".comment_container").addEventListener("click", showDeleteComment);
@@ -199,6 +206,28 @@ function deleteCommentPorc(e) {
         }
 	}
 }
+function deletePostPorc(e) {
+	const targetBtn = e.target;
+	if(targetBtn.classList.contains("delete_btn")) {
+	      // 현재 클릭한 버튼의 부모 요소 안에서 .delete_pw 찾기
+        const deleteContainer = targetBtn.closest(".delete_container");
+        if (deleteContainer) {
+            const passwordInput = deleteContainer.querySelector(".delete_pw");
+            const userPw = passwordInput.value; // 입력된 비밀번호 값 가져오기
+
+
+            // 비밀번호가 비어 있으면 알림
+            if (!userPw.trim()) {
+                alert("비밀번호를 입력해주세요!");
+                return;
+            }
+
+            // 이후의 삭제 로직 처리
+        	const postId = document.querySelector("#post_id_info").dataset.postId;
+        	deletePost(postId, userPw);
+        }
+	}
+}
 let request = null;
 //댓글등록 버튼 누르면. post로 ajax요청보냄.
 function createRequest() {
@@ -231,6 +260,17 @@ function deleteComment(commentId, userPw) {
 	let qry = "userPw=" + encodeURIComponent(userPw) + "&commentId=" + encodeURIComponent(commentId);
 	request.open("POST", url, true);
 	request.onreadystatechange = updateComment;
+	request.setRequestHeader("Content-type",
+			"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+function deletePost(postId, userPw) {
+	createRequest();
+	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
+	let url = "deletePost.jsp?";
+	let qry = "userPw=" + encodeURIComponent(userPw) + "&postId=" + encodeURIComponent(postId);
+	request.open("POST", url, true);
+	request.onreadystatechange = redirectCommunity;
 	request.setRequestHeader("Content-type",
 			"application/x-www-form-urlencoded");
 	request.send(qry)
@@ -370,7 +410,17 @@ function updateMoveComment() {
 		}
 	}
 }
-
+function redirectCommunity() {
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "error") {
+			alert('삭제에 실패했습니다. 다시 시도해주세요.');
+		} else {
+			alert('삭제에 성공했습니다.');
+			window.location.href = "community.jsp";
+		}
+	}
+}
 </script>
 
 </html>

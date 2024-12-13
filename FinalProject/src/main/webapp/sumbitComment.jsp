@@ -5,7 +5,7 @@
 <%@ page import="javabeans.CommentEntity"%>
 
 <jsp:useBean id="commentdb" class="javabeans.CommentDatabase"
-	scope="request" />
+	scope="page" />
 <%
 request.setCharacterEncoding("UTF-8");
 response.setContentType("application/json");
@@ -19,7 +19,6 @@ String userPw = request.getParameter("userPw");
 String comment = request.getParameter("comment");
 
 String commentId = commentdb.addComment(parentId, userName, userPw, comment, currentTime);
-System.out.println("결과: " + commentId);
 if (commentId != null) {
 	// 성공 응답
 	response.getWriter().write("{\"status\":\"success\",\"commentId\":\"" + commentId + "\", \"userName\":\"" + userName

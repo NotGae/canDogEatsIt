@@ -60,7 +60,8 @@ public class PostDatabase {
 			// SQL 실행
 			result = stmt.executeQuery();
 			// List<comment>
-			// String postId, String userName, String postName, String postContent, String createDate,  int likeCnt, int disLikeCnt, int views
+			// String postId, String userName, String postName, String postContent, String
+			// createDate, int likeCnt, int disLikeCnt, int views
 			while (result.next()) {
 				PostEntity post = new PostEntity(result.getString(1), result.getString(2), result.getString(3),
 						result.getString(4), result.getString(5), result.getInt(6), result.getInt(7), result.getInt(8));
@@ -259,7 +260,7 @@ public class PostDatabase {
 			int rowsAffected = stmt.executeUpdate();
 
 			if (rowsAffected != 0) {
-				sql = "SELECT views FROM posts WHERE posts_id = ?";
+				sql = "SELECT views FROM posts WHERE post_id = ?";
 				try {
 					stmt = conn.prepareStatement(sql);
 					// 파라미터 바인딩
@@ -289,5 +290,41 @@ public class PostDatabase {
 			e.printStackTrace();
 		}
 		return views;
+	}
+
+	public boolean deletePost(String postId, String userPw) {
+		boolean success = false;
+		connect();
+		String sql1 = "DELETE FROM posts WHERE post_id = ? AND user_pw = ?";
+		String sql2 = "DELETE FROM comments WHERE parent_id = ?";
+
+		try (PreparedStatement stmt1 = conn.prepareStatement(sql1);
+				PreparedStatement stmt2 = conn.prepareStatement(sql2);) {
+
+			// 트랜잭션 시작
+			conn.setAutoCommit(false);
+
+			// 게시글 삭제
+			stmt1.setString(1, postId);
+			stmt1.setString(2, userPw);
+			int rowsAffected1 = stmt1.executeUpdate();
+
+			if (rowsAffected1 > 0) {
+				// 댓글 삭제
+				stmt2.setString(1, postId);
+				stmt2.executeUpdate(); // 댓글이 없더라도 에러가 나지 않음
+
+				// 트랜잭션 커밋
+				conn.commit();
+				success = true;
+			} else {
+				conn.rollback(); // 게시글 삭제 실패 시 롤백
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return success;
 	}
 }

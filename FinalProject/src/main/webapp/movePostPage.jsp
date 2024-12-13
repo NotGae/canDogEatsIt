@@ -6,7 +6,7 @@
 <%@ page import="java.util.ArrayList"%>
 <%@ page import="javabeans.PostEntity"%>
 
-<jsp:useBean id="postdb" class="javabeans.PostDatabase" scope="request" />
+<jsp:useBean id="postdb" class="javabeans.PostDatabase" scope="page" />
 
 
 <%

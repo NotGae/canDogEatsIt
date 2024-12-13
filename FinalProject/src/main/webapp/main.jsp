@@ -5,7 +5,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Can Dogs Eat It?</title>
-
+<link rel="stylesheet" href="./resource/main.css">
 </head>
 <body>
 	<jsp:include page="/include/nav.jsp"></jsp:include>

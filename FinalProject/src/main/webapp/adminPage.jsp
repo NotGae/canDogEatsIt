@@ -1,40 +1,40 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
 
-<%@ page import="javabeans.PostEntity"%>
+<%@ page import="javabeans.RequestedFoodEntity"%>
 <%@ page import="java.util.ArrayList"%>
 
-<jsp:useBean id="postdb" class="javabeans.PostDatabase" scope="page" />
+<jsp:useBean id="requestedfooddb"
+	class="javabeans.RequestedFoodDatabase" scope="page" />
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset=UTF-8">
 <title>Insert title here</title>
-<link rel="stylesheet" href="./resource/community.css">
+<style>
+.post_container li {
+	border: 1px solid black;
+}
+</style>
 </head>
 <%
 int postPageOffset = 0;
 
-ArrayList<PostEntity> posts = postdb.getPostArray(postPageOffset);
+ArrayList<RequestedFoodEntity> posts = requestedfooddb.getRequestedFoodArray(postPageOffset);
 %>
 
 <body>
 	<jsp:include page="/include/nav.jsp"></jsp:include>
 	<div id="current_post_page_number" data-post-page="<%=postPageOffset%>"
 		style="display: none"></div>
-	<section>
-		<ul>
-			<li><a href="createPost.jsp">글쓰기</a></li>
-		</ul>
-	</section>
 	<ul class="post_container">
 		<%
-		for (PostEntity post : posts) {
+		for (RequestedFoodEntity post : posts) {
 		%>
-		<li><a href="postDetail.jsp?postId=<%=post.getPostId()%>">작성자:
-				<%=post.getUserName()%>, 제목: <%=post.getPostName()%>, 조회수: <%=post.getViews()%>,
-				좋아요: <%=post.getLikeCnt()%>, 싫어요: <%=post.getDisLikeCnt()%>, 작성일시: <%=post.getCreateDate()%>
-		</a></li>
+		<li data-id="<%=post.getRequestedFoodId()%>"><%=post.getRequestedFoodName()%>,
+			<%=post.getRequestedCnt()%>, <%=post.getRequestedDate()%>
+			<button class="add_food">등록</button>
+			<button class="remove_food">거부</button></li>
 		<%
 		}
 		%>
@@ -58,7 +58,7 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		
 	});
 });
-
+document.querySelector(".post_container").addEventListener("click", decideFood);
 let request = null;
 //댓글등록 버튼 누르면. post로 ajax요청보냄.
 function createRequest() {
@@ -70,7 +70,44 @@ function createRequest() {
 	if (request == null)
 		alert('Error creating request object!');
 }
-
+function decideFood(e) {
+	const targetBtn = e.target;
+    const parentId = targetBtn.parentNode.dataset.id;
+	let decideType = null;
+	if(targetBtn.classList.contains("add_food")) {
+		decideType = "add";
+	} else if(targetBtn.classList.contains("remove_food")) {
+		decideType = "remove";
+	}
+    if (decideType) {
+        decideRequestedFood(decideType, parentId); // 클릭한 버튼에 따라 처리
+    }
+}
+function decideRequestedFood(decideType, parentId) {
+	createRequest();
+	if(decideType === null) return;
+	
+	let url = "decideRequestedFood.jsp?";
+	let qry = "decideType=" + encodeURIComponent(decideType) + "&parentId=" + encodeURIComponent(parentId);
+	request.open("POST", url, true);
+	request.onreadystatechange = updatePage;
+	request.setRequestHeader("Content-type",
+		"application/x-www-form-urlencoded");
+	request.send(qry)
+}
+function updatePage() {
+	if (request.readyState == 4 && request.status == 200) {
+		const response = JSON.parse(request.responseText);
+		if (response.status === "success") {
+			const parentId = response.parentId;
+			const postContainer = document.querySelector(".post_container");
+		    const postElement = postContainer.querySelector('li[data-id="' + parentId + '"]');
+		    if (postElement) {
+		    	postElement.remove();
+		    }
+		}
+	}
+}
 function movePostPage(offset) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.

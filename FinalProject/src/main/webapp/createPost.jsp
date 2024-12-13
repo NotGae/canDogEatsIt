@@ -5,6 +5,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Insert title here</title>
+<link rel="stylesheet" href="./resource/createPost.css">
 </head>
 <body>
 	<form method="POST" action="submitPost.jsp" class="post_form">

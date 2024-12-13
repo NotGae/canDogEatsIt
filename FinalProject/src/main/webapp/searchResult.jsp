@@ -7,7 +7,7 @@
 
 <jsp:useBean id="fooddb" class="javabeans.FoodDatabase" scope="page" />
 <jsp:useBean id="commentdb" class="javabeans.CommentDatabase"
-	scope="request" />
+	scope="page" />
 <%
 request.setCharacterEncoding("UTF-8");
 
@@ -17,27 +17,31 @@ int commentPage = 0;
 
 <%
 FoodEntity food = fooddb.getFood(searchValue);
-boolean isViewed = false;
-Cookie[] cookies = request.getCookies();
+ArrayList<CommentEntity> commentList = null;
+if (food != null) {
 
-if (cookies != null) {
-	for (Cookie cookie : cookies) {
-		if (cookie.getName().equals("viewed_" + food.getFoodId())) {
-	isViewed = true;
-	break;
+	boolean isViewed = false;
+	Cookie[] cookies = request.getCookies();
+
+	if (cookies != null) {
+		for (Cookie cookie : cookies) {
+	if (cookie.getName().equals("viewed_" + food.getFoodId())) {
+		isViewed = true;
+		break;
+	}
 		}
 	}
-}
-if (!isViewed) {
-	// 조회수 증가 처리
-	fooddb.updateViews(food.getFoodId());
+	if (!isViewed) {
+		// 조회수 증가 처리
+		fooddb.updateViews(food.getFoodId());
 
-	// 쿠키 생성
-	Cookie viewCookie = new Cookie("viewed_" + food.getFoodId(), "true");
-	viewCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
-	response.addCookie(viewCookie);
+		// 쿠키 생성
+		Cookie viewCookie = new Cookie("viewed_" + food.getFoodId(), "true");
+		viewCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
+		response.addCookie(viewCookie);
+	}
+	commentList = commentdb.getCommentArray(food.getFoodId(), commentPage);
 }
-ArrayList<CommentEntity> commentList = commentdb.getCommentArray(food.getFoodId(), commentPage);
 %>
 <!DOCTYPE html>
 <html>
@@ -49,10 +53,15 @@ label {
 	display: block;
 }
 </style>
-<link rel="stylesheet" href="./resource/main.css">
+<link rel="stylesheet" href="./resource/searchResult.css">
 </head>
 <body>
 	<jsp:include page="/include/nav.jsp"></jsp:include>
+
+	<%
+	if (food != null) {
+	%>
+
 	<div id="current_comment_page_number"
 		data-comment-page="<%=commentPage%>" style="display: none"></div>
 	<section class="food_container" data-id="<%=food.getFoodId()%>">
@@ -105,6 +114,18 @@ label {
 		<li class="back_comment_page_btn comment_page_btn"><<</li>
 		<li class="front_comment_page_btn comment_page_btn">>></li>
 	</ul>
+	<%
+	} else {
+	%>
+	<p><strong><%= searchValue %></strong>의 검색결과가 없습니다.</p>
+	<p>관리자에게 등록을 요청하세요</p>
+	<form method="POST" action="requestFood.jsp">
+	<input class="requset_food_name" name="requestFoodName" style="display:none;" value="<%= searchValue %>"/>
+	<button type="submit">등록요청하기</button>
+	</form>
+	<%
+	}
+	%>
 </body>
 <script>
 	document

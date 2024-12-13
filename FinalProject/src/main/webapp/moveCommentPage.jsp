@@ -7,7 +7,7 @@
 <%@ page import="javabeans.CommentEntity"%>
 
 <jsp:useBean id="commentdb" class="javabeans.CommentDatabase"
-	scope="request" />
+	scope="page" />
 
 
 <%
