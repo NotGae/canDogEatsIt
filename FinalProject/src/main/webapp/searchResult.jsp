@@ -10,7 +10,10 @@
 	scope="page" />
 <%
 request.setCharacterEncoding("UTF-8");
-
+String orderType = "mostRecent"; // earliestFirst, mostLike 
+if (request.getParameter("orderType") != null) {
+	orderType = request.getParameter("orderType");
+}
 String searchValue = request.getParameter("searchValue");
 int commentPage = 0;
 %>
@@ -40,7 +43,7 @@ if (food != null) {
 		viewCookie.setMaxAge(24 * 60 * 60); // 1시간 유지
 		response.addCookie(viewCookie);
 	}
-	commentList = commentdb.getCommentArray(food.getFoodId(), commentPage);
+	commentList = commentdb.getCommentArray(food.getFoodId(), commentPage, orderType);
 }
 %>
 <!DOCTYPE html>
@@ -64,6 +67,11 @@ label {
 
 	<div id="current_comment_page_number"
 		data-comment-page="<%=commentPage%>" style="display: none"></div>
+	<div id="comment_order_type" data-order-type="<%=orderType%>"
+		style="display: none"></div>
+		<div id="food_id" data-food-id="<%=food.getFoodId()%>"
+		style="display: none"></div>
+
 	<section class="food_container" data-id="<%=food.getFoodId()%>">
 		<h1><%=food.getFoodName()%></h1>
 		<p>
@@ -87,6 +95,11 @@ label {
 		<button type="submit">등록</button>
 	</form>
 
+	<select class="order_type" name="orderType">
+		<option value="mostRecent" SELECTED>최신순</option>
+		<option value="earliestFirst">오래된순</option>
+		<option value="mostLike">추천순</option>
+	</select>
 	<ul class="comment_container">
 		<%
 		for (int i = 0; i < commentList.size(); i++) {
@@ -117,11 +130,14 @@ label {
 	<%
 	} else {
 	%>
-	<p><strong><%= searchValue %></strong>의 검색결과가 없습니다.</p>
+	<p>
+		<strong><%=searchValue%></strong>의 검색결과가 없습니다.
+	</p>
 	<p>관리자에게 등록을 요청하세요</p>
 	<form method="POST" action="requestFood.jsp">
-	<input class="requset_food_name" name="requestFoodName" style="display:none;" value="<%= searchValue %>"/>
-	<button type="submit">등록요청하기</button>
+		<input class="requset_food_name" name="requestFoodName"
+			style="display: none;" value="<%=searchValue%>" />
+		<button type="submit">등록요청하기</button>
 	</form>
 	<%
 	}
@@ -156,6 +172,16 @@ label {
 	document.querySelector(".comment_container").addEventListener("click", showDeleteComment);
 	document.querySelector(".comment_container").addEventListener("click", deleteCommentPorc);
 	document.querySelector(".food_container").addEventListener("click", voteProesss);
+	
+	document.querySelector(".order_type").addEventListener("change", function(event) {
+	    document.querySelector("#comment_order_type").dataset.orderType = event.target.value;
+	    document.querySelector("#current_comment_page_number").dataset.commentPage = 0;
+	    const parentId = document.querySelector("#food_id").dataset.foodId;
+	    
+	    moveCommentPage(0, parentId, event.target.value);
+	});
+	
+	
 	function voteProesss(e) {
 	    const targetBtn = e.target;
 	    // 클릭한 요소가 .vote_btn인지 확인
@@ -211,14 +237,15 @@ label {
 	document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		item.addEventListener("click", (e) => {
 			const currentPageNum = parseInt(document.querySelector("#current_comment_page_number").dataset.commentPage);
+			const orderType = document.querySelector("#comment_order_type").dataset.orderType;
 			const target = e.currentTarget;
 			const parentId = target.parentNode.dataset.parentid;
 			console.log(currentPageNum);
 			if (target.classList.contains("back_comment_page_btn")) {
 				// 여기서도 뭐 ajax하면 될듯.
-				moveCommentPage(currentPageNum - 5, parentId);
+				moveCommentPage(currentPageNum - 5, parentId, orderType);
 	        } else if (target.classList.contains("front_comment_page_btn")) {
-	        	moveCommentPage(currentPageNum + 5, parentId);
+	        	moveCommentPage(currentPageNum + 5, parentId, orderType);
 	        }
 			
 		});
@@ -272,11 +299,11 @@ label {
 		request.send(qry)
 	}
 	
-	function moveCommentPage(offset, parentId) {
+	function moveCommentPage(offset, parentId, orderType) {
 		createRequest();
 		// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
 		let url = "moveCommentPage.jsp?";
-		let qry = "offset=" + encodeURIComponent(offset) + "&parentId=" + encodeURIComponent(parentId);
+		let qry = "offset=" + encodeURIComponent(offset) + "&parentId=" + encodeURIComponent(parentId) + "&orderType=" + encodeURIComponent(orderType);
 		request.open("POST", url, true);
 		request.onreadystatechange = updateMoveComment;
 		request.setRequestHeader("Content-type",

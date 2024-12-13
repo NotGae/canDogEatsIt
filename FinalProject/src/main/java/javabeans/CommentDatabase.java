@@ -45,13 +45,21 @@ public class CommentDatabase {
 			e.printStackTrace();
 		}
 	}
-	public ArrayList<CommentEntity> getCommentArray(String parentId, int offset) {
+	public ArrayList<CommentEntity> getCommentArray(String parentId, int offset, String orderType) {
 		connect();
 		ArrayList<CommentEntity> list = new ArrayList<>();
 
 		try {
-			// student스키마 안에 있는 student_info 테이블에 접근.
-			String sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date DESC LIMIT ?, 5";
+			String sql = "";
+			if(orderType.equals("mostRecent")) {
+				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date ASC LIMIT ?, 5";
+			} else if(orderType.equals("earliestFirst")) {
+				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date DESC LIMIT ?, 5";
+			} else if(orderType.equals("mostLike")) {
+				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY like_cnt DESC LIMIT ?, 5";
+			} else {
+				return list;
+			}
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
 			stmt.setString(1, parentId);
