@@ -81,6 +81,46 @@ public class PostDatabase {
 		}
 	}
 
+	public ArrayList<PostEntity> getPostArrayByKeyword(int offset, String keyword, String searchType) {
+		connect();
+		ArrayList<PostEntity> list = new ArrayList<>();
+
+		try {
+			String sql = "";
+			if(searchType.equals("title")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_name LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if(searchType.equals("content")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE post_content LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else if(searchType.equals("user")) {
+				sql = "SELECT post_id, user_name, post_name, post_content, create_date, like_cnt, dislike_cnt, views FROM posts WHERE user_name LIKE ? ORDER BY create_date DESC LIMIT ?, 10";
+			} else {
+				return list;
+			}
+			stmt = conn.prepareStatement(sql);
+			// 파라미터 바인딩
+			stmt.setString(1, "%" + keyword + "%"); // LIKE 검색을 위한 패턴
+			stmt.setInt(2, offset);
+			// SQL 실행
+			result = stmt.executeQuery();
+			while (result.next()) {
+				PostEntity post = new PostEntity(result.getString(1), result.getString(2), result.getString(3),
+						result.getString(4), result.getString(5), result.getInt(6), result.getInt(7), result.getInt(8));
+				list.add(post);
+			}
+			disconnect();
+			stmt.close();
+			result.close();
+
+			return list;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			disconnect();
+
+			return list;
+		}
+	}
+
 	public String addPost(String userName, String userPw, String postName, String postContent, String currnetTime) {
 		connect();
 		boolean success = false;

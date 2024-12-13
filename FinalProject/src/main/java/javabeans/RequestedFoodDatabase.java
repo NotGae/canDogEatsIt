@@ -81,7 +81,7 @@ public class RequestedFoodDatabase {
 
 		try {
 			// student스키마 안에 있는 student_info 테이블에 접근.
-			String sql = "SELECT * FROM requested_foods ORDER BY requested_date DESC LIMIT ?, 5";
+			String sql = "SELECT * FROM requested_foods ORDER BY requested_date DESC LIMIT ?, 15";
 			stmt = conn.prepareStatement(sql);
 			// 파라미터 바인딩
 			stmt.setInt(1, offset);

@@ -111,7 +111,7 @@ function updatePage() {
 function movePostPage(offset) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
-	let url = "moveCommentPage.jsp?";
+	let url = "moveRequstPage.jsp?";
 	let qry = "offset=" + encodeURIComponent(offset);
 	request.open("POST", url, true);
 	request.onreadystatechange = updateMovePost;
