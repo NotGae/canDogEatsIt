@@ -13,7 +13,12 @@ request.setCharacterEncoding("UTF-8");
 String postId = request.getParameter("postId");
 int commentPage = 0;
 
-ArrayList<CommentEntity> commentList = commentdb.getCommentArray(postId, commentPage);
+String orderType = "mostRecent"; // earliestFirst, mostLike 
+if (request.getParameter("orderType") != null) {
+	orderType = request.getParameter("orderType");
+}
+
+ArrayList<CommentEntity> commentList = commentdb.getCommentArray(postId, commentPage, orderType);
 PostEntity post = postdb.getPost(postId);
 
 boolean isViewed = false;
@@ -55,6 +60,8 @@ label {
 	<div id="post_id_info" data-post-id="<%=postId%>" style="display: none"></div>
 	<div id="current_comment_page_number"
 		data-comment-page="<%=commentPage%>" style="display: none"></div>
+	<div id="comment_order_type" data-order-type="<%=orderType%>"
+		style="display: none"></div>
 	<jsp:include page="/include/nav.jsp"></jsp:include>
 	<h1><%=post.getPostName()%></h1>
 	<section class="post_content_container" data-id="<%=post.getPostId()%>">
@@ -87,6 +94,11 @@ label {
 		<button type="submit">등록</button>
 	</form>
 
+	<select class="order_type" name="orderType">
+		<option value="mostRecent" SELECTED>최신순</option>
+		<option value="earliestFirst">오래된순</option>
+		<option value="mostLike">추천순</option>
+	</select>
 	<ul class="comment_container">
 		<%
 		for (int i = 0; i < commentList.size(); i++) {
@@ -133,6 +145,13 @@ document.querySelector(".comment_form").addEventListener("submit",function(event
 	}
 	saveComment(parentId, userName, userPw, comment);
 }); // 한 번만 실행되도록 설정
+document.querySelector(".order_type").addEventListener("change", function(event) {
+    document.querySelector("#comment_order_type").dataset.orderType = event.target.value;
+    document.querySelector("#current_comment_page_number").dataset.commentPage = 0;
+    const parentId = document.querySelector("#post_id_info").dataset.postId;
+    
+    moveCommentPage(0, parentId, event.target.value);
+});
 document.querySelector(".post_content_container").addEventListener("click", showDeleteComment);
 document.querySelector(".post_content_container").addEventListener("click", deletePostPorc);
 // 여기에 쿠키 확인하는거 넣으면 될듯.
@@ -162,14 +181,15 @@ function voteProesss(e) {
 document.querySelectorAll(".comment_page_btn").forEach((item) => {
 		item.addEventListener("click", (e) => {
 		const currentPageNum = parseInt(document.querySelector("#current_comment_page_number").dataset.commentPage);
+		const orderType = document.querySelector("#comment_order_type").dataset.orderType;
 		const target = e.currentTarget;
 		const parentId = target.parentNode.dataset.parentid;
-	
+		if(currentPageNum - 5 < 0) return;
 		if (target.classList.contains("back_comment_page_btn")) {
 			// 여기서도 뭐 ajax하면 될듯.
-			moveCommentPage(currentPageNum - 5, parentId);
+			moveCommentPage(currentPageNum - 5, parentId, orderType);
 		} else if (target.classList.contains("front_comment_page_btn")) {
-			moveCommentPage(currentPageNum + 5, parentId);
+			moveCommentPage(currentPageNum + 5, parentId, orderType);
 		}
 	});
 });
@@ -288,11 +308,11 @@ function increamentVoteCnt(voteType, parentId) {
 	request.send(qry)
 }
 
-function moveCommentPage(offset, parentId) {
+function moveCommentPage(offset, parentId, orderType) {
 	createRequest();
 	// ajax로 get요청을 보낼 시, 쿼리 스트링으로 정보 전달.
 	let url = "moveCommentPage.jsp?";
-	let qry = "offset=" + encodeURIComponent(offset) + "&parentId=" + encodeURIComponent(parentId);
+	let qry = "offset=" + encodeURIComponent(offset) + "&parentId=" + encodeURIComponent(parentId) + "&orderType=" + encodeURIComponent(orderType);
 	request.open("POST", url, true);
 	request.onreadystatechange = updateMoveComment;
 	request.setRequestHeader("Content-type",
@@ -306,6 +326,7 @@ function updateComment() {
 	if (request.readyState == 4 && request.status == 200) {
 		const response = JSON.parse(request.responseText);
 		if (response.status === "success") {
+			const orderType = document.querySelector("#comment_order_type").dataset.orderType;
 			const commentId = response.commentId;
 			const userName = response.userName; // 서버에서 보낸 사용자 이름
 			const comment = response.comment; // 서버에서 보낸 댓글 내용
@@ -313,22 +334,31 @@ function updateComment() {
 		
 			let commentContainer = document
 					.querySelector(".comment_container");
-		
 			let htmlString = '<li class="comment" data-id="'  + commentId + '">'
-				+ userName
-				+ ": "
-				+ comment
-				+ " "
-				+ currentTime
-				+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button>" +
-				"<button type='button' class='show_delete_btn'>X</button> <span " + 
-		        "class='delete_container' style='display: none'> <label><input " +
-				"type='password' class='delete_pw' /></label>" +
-				"<button type='button' class='delete_btn'>삭제</button>" +
-				"</span>" +
-				"</li>";
-			// 새로운 댓글을 화면에 추가
-			commentContainer.insertAdjacentHTML("afterbegin", htmlString);
+			+ userName
+			+ ": "
+			+ comment
+			+ " "
+			+ currentTime
+			+ "<button class='vote_btn like'>추천(0)</button><button class='vote_btn dislike'>비추천(0)</button>" +
+			"<button type='button' class='show_delete_btn'>X</button> <span " + 
+	        "class='delete_container' style='display: none'> <label><input " +
+			"type='password' class='delete_pw' /></label>" +
+			"<button type='button' class='delete_btn'>삭제</button>" +
+			"</span>" +
+			"</li>";
+			let childCount = commentContainer.childElementCount;
+			
+			if(orderType === "mostRecent") {
+				if(childCount >= 5) {
+					commentContainer.removeChild(commentContainer.lastElementChild);
+				}
+				commentContainer.insertAdjacentHTML("afterbegin", htmlString);
+			} else if(orderType === "earliestFirst" || orderType === "mostLike") {
+				if(childCount < 5) {
+					commentContainer.insertAdjacentHTML("beforeend", htmlString);
+				}
+			}
 		}else if(response.status === "delete") {
 			const commentId = response.commentId;
 			const commentContainer = document.querySelector(".comment_container");

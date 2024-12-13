@@ -69,7 +69,7 @@ label {
 		data-comment-page="<%=commentPage%>" style="display: none"></div>
 	<div id="comment_order_type" data-order-type="<%=orderType%>"
 		style="display: none"></div>
-		<div id="food_id" data-food-id="<%=food.getFoodId()%>"
+	<div id="food_id" data-food-id="<%=food.getFoodId()%>"
 		style="display: none"></div>
 
 	<section class="food_container" data-id="<%=food.getFoodId()%>">
@@ -240,7 +240,7 @@ label {
 			const orderType = document.querySelector("#comment_order_type").dataset.orderType;
 			const target = e.currentTarget;
 			const parentId = target.parentNode.dataset.parentid;
-			console.log(currentPageNum);
+			if(currentPageNum - 5 < 0) return;
 			if (target.classList.contains("back_comment_page_btn")) {
 				// 여기서도 뭐 ajax하면 될듯.
 				moveCommentPage(currentPageNum - 5, parentId, orderType);
@@ -320,6 +320,7 @@ label {
 				const commentId = response.commentId;
 				const userName = response.userName; // 서버에서 보낸 사용자 이름
 				const comment = response.comment; // 서버에서 보낸 댓글 내용
+				const orderType = document.querySelector("#comment_order_type").dataset.orderType;
 				const currentTime = response.currentTime; // 서버에서 보낸 댓글 내용
 
 				let commentContainer = document
@@ -338,8 +339,19 @@ label {
 						"<button type='button' class='delete_btn'>삭제</button>" +
 						"</span>" +
 						"</li>";
-				// 새로운 댓글을 화면에 추가
-				commentContainer.insertAdjacentHTML("afterbegin", htmlString);
+						
+				let childCount = commentContainer.childElementCount;
+				
+				if(orderType === "mostRecent") {
+					if(childCount >= 5) {
+						commentContainer.removeChild(commentContainer.lastElementChild);
+					}
+					commentContainer.insertAdjacentHTML("afterbegin", htmlString);
+				} else if(orderType === "earliestFirst" || orderType === "mostLike") {
+					if(childCount < 5) {
+						commentContainer.insertAdjacentHTML("beforeend", htmlString);
+					}
+				}
 			} else if(response.status === "delete") {
 				const commentId = response.commentId;
 				const commentContainer = document.querySelector(".comment_container");

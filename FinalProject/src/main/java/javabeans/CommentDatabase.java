@@ -52,9 +52,9 @@ public class CommentDatabase {
 		try {
 			String sql = "";
 			if(orderType.equals("mostRecent")) {
-				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date ASC LIMIT ?, 5";
-			} else if(orderType.equals("earliestFirst")) {
 				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date DESC LIMIT ?, 5";
+			} else if(orderType.equals("earliestFirst")) {
+				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY create_date ASC LIMIT ?, 5";
 			} else if(orderType.equals("mostLike")) {
 				sql = "SELECT comment_id, parent_id, user_name, comment_content, create_date, like_cnt, dislike_cnt FROM comments WHERE parent_id = ? ORDER BY like_cnt DESC LIMIT ?, 5";
 			} else {

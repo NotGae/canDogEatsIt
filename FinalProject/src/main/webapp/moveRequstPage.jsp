@@ -6,7 +6,8 @@
 <%@ page import="java.util.ArrayList"%>
 <%@ page import="javabeans.RequestedFoodEntity"%>
 
-<jsp:useBean id="requestedfooddb" class="javabeans.RequestedFoodDatabase" scope="page" />
+<jsp:useBean id="requestedfooddb"
+	class="javabeans.RequestedFoodDatabase" scope="page" />
 
 
 <%
@@ -27,7 +28,9 @@ class ResponseWrapper {
 		this.postList = postList;
 	}
 }
-postList = requestedfooddb.getRequestedFoodArray(Integer.parseInt(offset));
+if (Integer.parseInt(offset) >= 0) {
+	postList = requestedfooddb.getRequestedFoodArray(Integer.parseInt(offset));
+}
 // Jackson: com.fasterxml.jackson.core:jackson-databind 아님 Gson: com.google.code.gson:gson로 변환해서 보내기.
 if (postList == null) {
 	response.getWriter().write("{\"status\":\"error\", \"message\":\"Failed to update comment data.\"}");

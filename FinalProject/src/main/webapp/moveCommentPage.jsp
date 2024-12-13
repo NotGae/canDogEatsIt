@@ -32,7 +32,13 @@ class ResponseWrapper {
 		this.commentList = commentList;
 	}
 }
+
+
 if (commentdb.existsRowsByParent(parentId)) {
+	if (Integer.parseInt(offset) < 0) {
+		response.getWriter().write("{\"status\":\"error\", \"message\":\"Failed to update comment data.\"}");
+		return;
+	}
 	commentList = commentdb.getCommentArray(parentId, Integer.parseInt(offset), orderType);
 	// Jackson: com.fasterxml.jackson.core:jackson-databind 아님 Gson: com.google.code.gson:gson로 변환해서 보내기.
 

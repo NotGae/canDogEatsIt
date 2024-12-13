@@ -49,6 +49,7 @@ document.querySelectorAll(".comment_page_btn").forEach((item) => {
 	item.addEventListener("click", (e) => {
 		const currentPageNum = parseInt(document.querySelector("#current_post_page_number").dataset.postPage);
 		const target = e.currentTarget;
+		if(currentPageNum - 10 < 0) return;
 		if (target.classList.contains("back_comment_page_btn")) {
 			// 여기서도 뭐 ajax하면 될듯.
 			movePostPage(currentPageNum - 10);
